@@ -217,7 +217,7 @@ Nombres resumidos; el texto oficial está en el archivo general.
 ## 9. Estado del código
 
 ### Proyecto: carpeta `probosque/`
-Ruta: `~/Desktop/probosque`. Es la carpeta del proyecto real (antes se llamaba `rebanada`); no la trates como práctica ni como código desechable. Todavía **no es repositorio de Git**.
+Ruta: `~/Desktop/probosque`. Es la carpeta del proyecto real (antes se llamaba `rebanada`); no la trates como práctica ni como código desechable. Repositorio público en GitHub: https://github.com/nicolas090705/probosque (rama `main`). Identidad local del repo: `Angel Nicolas <anicolash2001@alumno.ipn.mx>`. `.gitattributes` fuerza fin de línea LF.
 
 ```
 probosque/
@@ -262,7 +262,7 @@ probosque/
 - Rutas: `/api/expedientes/<id>/aceptar/`, `/api/expedientes/<id>/rechazar/` (`{"faltantes": "..."}`) y `/api/dictamenes/`. Usa `SimpleRouter` para no duplicar la raíz `/api/`.
 
 ### Frontend · `frontend/probosque-registro`
-- Lo bajé de un repositorio de GitHub que ya no se usará; todavía trae su `.git` viejo.
+- Lo bajé de un repositorio de GitHub que ya no se usará; su `.git` viejo quedó respaldado en `~/Desktop/probosque-respaldo/` (fuera del proyecto).
 - `src/api/cliente.js` (`pedir()`, errores de DRF en texto) y `src/estado/Almacen.jsx` (única capa de datos: traduce camelCase ↔ snake_case con `COLUMNAS`; las pantallas reciben la misma forma de antes).
 - Formularios por programa en `src/datos/camposFormulario.js`. Guardabosques: clave `guardabosques`, siglas `PEG`.
 
@@ -279,8 +279,9 @@ probosque/
 
 ### Pendientes conocidos
 - Pantalla de ventanilla en React (HU-1.2-02) y formulario de Guardabosques.
-- Recepción no muestra las solicitudes en subsanación; el solicitante reenvía sin poder subir archivos nuevos.
-- Repositorio en GitHub con acceso para el equipo: quitar el `.git` viejo del frontend y crear `.gitignore` (`.venv`, `media/`, `node_modules/`, `dist/`).
+- Recepción no muestra las solicitudes en subsanación. (Ya resuelto: en Mi estatus el solicitante reemplaza archivos al subsanar; `POST /api/solicitudes/<id>/reenviar/` acepta multipart y sustituye los documentos del mismo tipo.)
+- Nada desecha la solicitud cuando vence el plazo de subsanación; solo se bloquea el reenvío.
+- Invitar al equipo como colaboradores del repositorio (Settings → Collaborators).
 - Siguientes HU del módulo 2: 2.2 (cruce con `ZonaEspecial`), 2.3 (dictamen técnico), 2.5 en adelante.
 
 ### Trampas conocidas en esta computadora
