@@ -1,0 +1,9 @@
+# Todos los archivos de texto con fin de linea de Linux (LF): asi Docker y todas las computadoras ven lo mismo
+* text=auto eol=lf
+
+# Archivos binarios: Git no los toca
+*.pdf binary
+*.png binary
+*.jpg binary
+*.zip binary
+*.kmz binary
