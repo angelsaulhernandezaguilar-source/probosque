@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: probosque
+      POSTGRES_USER: probosque
+      POSTGRES_PASSWORD: probosque
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    # Revisa cada 5 s si Postgres ya acepta conexiones.
+    # -h 127.0.0.1 obliga a usar TCP, así no da "listo" durante la inicialización de PostGIS.
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "probosque", "-d", "probosque", "-h", "127.0.0.1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    environment:
+      POSTGRES_DB: probosque
+      POSTGRES_USER: probosque
+      POSTGRES_PASSWORD: probosque
+      POSTGRES_HOST: db
+    # El backend espera a que el healthcheck de db diga "healthy", no solo a que el contenedor arranque.
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

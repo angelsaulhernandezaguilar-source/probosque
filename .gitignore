@@ -1,0 +1,26 @@
+# Qué NO se sube a GitHub (cada quien lo genera en su computadora)
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+backend/db.sqlite3
+
+# Archivos subidos por los usuarios (documentos, polígonos, RO cargadas desde la web)
+backend/media/
+
+# Node / React
+node_modules/
+dist/
+
+# Configuración local y secretos
+.env
+.env.*
+.claude/settings.local.json
+
+# Editores y sistema operativo
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store
