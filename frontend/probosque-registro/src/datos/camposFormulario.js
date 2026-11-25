@@ -30,6 +30,15 @@ const lista = (id, etiqueta, opciones, obligatorio = false) => ({
   ),
 });
 
+const grupoCasillas = (id, etiqueta, opciones, seccion) => ({
+  id,
+  etiqueta,
+  tipo: "checkbox-group",
+  obligatorio: false,
+  opciones: opciones.map((opcion) => ({ valor: opcion, etiqueta: opcion })),
+  seccion,
+});
+
 const archivo = (
   id,
   etiqueta,
@@ -105,8 +114,8 @@ const camposComunes = () => [
   texto("otroTipoPersona", "Especifica otro tipo de persona"),
   texto("razonSocial", "Denominación o razón social"),
   texto("nombres", "Nombres de la persona solicitante o representante", true),
-  texto("apellidos", "Primer apellido", true),
-  texto("segundoApellido", "Segundo apellido"),
+  texto("apellidos", "Apellido paterno", true),
+  texto("segundoApellido", "Apellido materno"),
   texto("secretarioNombres", "Nombre(s) del secretario(a)"),
   texto("secretarioApellidos", "Apellidos del secretario(a)"),
   texto("tesoreroNombres", "Nombre(s) del tesorero(a)"),
@@ -251,6 +260,69 @@ const camposCarbono = [
   ]),
 ];
 
+const camposManejoForestal = [
+  ...camposComunes(),
+  grupoCasillas(
+    "estudiosTecnicos",
+    "Selecciona los estudios o trámites aplicables",
+    [
+      "Maderable",
+      "No Maderable",
+      "PMF Combinado",
+      "Unidades para la Conservación de la Vida Silvestre maderables (UMA)",
+      "Documento Técnico Unificado (DTU)",
+      "Informe preventivo",
+    ],
+    "a) Estudios técnicos forestales (ETF)"
+  ),
+  texto("recursosNoMaderables", "Recursos a aprovechar (No Maderable)", false, {
+    seccion: "a) Estudios técnicos forestales (ETF)",
+  }),
+  texto("recursosPmfCombinado", "Recursos a aprovechar no maderables (PMF Combinado)", false, {
+    seccion: "a) Estudios técnicos forestales (ETF)",
+  }),
+  texto("recursosUma", "Recursos a aprovechar (UMA maderables)", false, {
+    seccion: "a) Estudios técnicos forestales (ETF)",
+  }),
+  texto("recursosInformePreventivo", "Recursos a aprovechar (Informe preventivo)", false, {
+    seccion: "a) Estudios técnicos forestales (ETF)",
+  }),
+  texto("prestadorNombre", "Nombre del Prestador de Servicios Forestales propuesto", false, {
+    seccion: "Datos del Prestador de Servicios Forestales propuesto",
+  }),
+  texto("registroForestalLibro", "Registro Forestal Nacional: Libro", false, {
+    seccion: "Datos del Prestador de Servicios Forestales propuesto",
+  }),
+  texto("registroForestalTipo", "Registro Forestal Nacional: Tipo", false, {
+    seccion: "Datos del Prestador de Servicios Forestales propuesto",
+  }),
+  texto("registroForestalVolumen", "Registro Forestal Nacional: Volumen", false, {
+    seccion: "Datos del Prestador de Servicios Forestales propuesto",
+  }),
+  texto("registroForestalNumero", "Registro Forestal Nacional: Número", false, {
+    seccion: "Datos del Prestador de Servicios Forestales propuesto",
+  }),
+  numero("registroForestalAnio", "Registro Forestal Nacional: Año", false),
+  texto("prestadorDomicilio", "Domicilio del Prestador de Servicios Forestales", false),
+  texto("prestadorTelefono", "Teléfono del Prestador de Servicios Forestales", false, { tipo: "tel" }),
+  texto("prestadorCorreo", "Correo electrónico del Prestador de Servicios Forestales", false, {
+    tipo: "email",
+  }),
+  grupoCasillas(
+    "certificacionesFsc",
+    "Selecciona las opciones de certificación aplicables",
+    [
+      "Certificación para Manejo Forestal (de forma Grupal)",
+      "Certificación para la Cadena de Custodia FSC",
+      "Mantenimiento a la Certificación de manejo forestal en forma grupal",
+      "Mantenimiento a la Certificación para la Cadena de Custodia",
+      "Declaración de servicios ecosistémicos",
+    ],
+    "b) Certificación internacional FSC"
+  ),
+  ...camposDocumentacion(),
+];
+
 export const FORMULARIOS_POR_PROGRAMA = {
   plantaciones: {
     nombre: "Solicitud Única - Plantaciones Sustentables",
@@ -267,6 +339,10 @@ export const FORMULARIOS_POR_PROGRAMA = {
   "capturando-carbono": {
     nombre: "Solicitud Única - Capturando Carbono (Procarbono)",
     campos: camposCarbono,
+  },
+  "manejo-forestal": {
+    nombre: "Solicitud Única - Manejo Forestal Sustentable",
+    campos: camposManejoForestal,
   },
 };
 

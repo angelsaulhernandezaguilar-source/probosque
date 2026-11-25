@@ -67,10 +67,6 @@ export default function PublicacionConvocatorias({ onVolver, onPublicar }) {
             ))}
           </select>
         </div>
-        <p className="pc-ayuda">
-          Los formatos de Manejo Forestal Sustentable y Guardabosques no vienen en el PDF recibido y no están disponibles para publicar todavía.
-        </p>
-
         {formulario ? (
           <div className="pc-formulario-resumen">
             <strong>Formulario asignado: {formulario.nombre}</strong>
@@ -87,7 +83,7 @@ export default function PublicacionConvocatorias({ onVolver, onPublicar }) {
           </div>
         ) : (
           <p className="pc-ayuda">
-            Los programas disponibles cuentan con formatos definidos a partir de la Solicitud Única FO-PB-501 A.
+            Al publicar, se asignará al programa su formulario de registro disponible.
           </p>
         )}
 
