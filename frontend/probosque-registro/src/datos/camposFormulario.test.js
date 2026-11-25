@@ -27,6 +27,7 @@ describe("camposDeConvocatoria", () => {
       "plantaciones",
       "restauracion",
       "servicios-ambientales",
+      "manejo-forestal",
       "capturando-carbono",
     ]);
 
@@ -50,6 +51,36 @@ describe("camposDeConvocatoria", () => {
         (campo) => campo.id === "sistemasAgroforestales"
       )
     ).toBe(true);
+  });
+
+  it("combines the shared registration fields with the MFS ETF and FSC options", () => {
+    const campos = formularioDePrograma("manejo-forestal").campos;
+    const estudios = campos.find((campo) => campo.id === "estudiosTecnicos");
+    const certificaciones = campos.find((campo) => campo.id === "certificacionesFsc");
+
+    expect(campos.map((campo) => campo.id)).toEqual(
+      expect.arrayContaining(["tipoPersona", "nombres", "telefono", "clabe", "validacionSig"])
+    );
+    expect(estudios.tipo).toBe("checkbox-group");
+    expect(estudios.opciones.map(({ valor }) => valor)).toEqual(
+      expect.arrayContaining(["Maderable", "No Maderable", "PMF Combinado", "Informe preventivo"])
+    );
+    expect(certificaciones.opciones.map(({ valor }) => valor)).toEqual(
+      expect.arrayContaining([
+        "Certificación para Manejo Forestal (de forma Grupal)",
+        "Certificación para la Cadena de Custodia FSC",
+        "Declaración de servicios ecosistémicos",
+      ])
+    );
+    expect(campos.find((campo) => campo.id === "prestadorNombre")).toBeDefined();
+    expect(campos.find((campo) => campo.id === "registroForestalAnio").tipo).toBe("number");
+  });
+
+  it("labels the applicant's paternal and maternal surnames separately", () => {
+    const campos = formularioDePrograma("manejo-forestal").campos;
+
+    expect(campos.find((campo) => campo.id === "apellidos").etiqueta).toBe("Apellido paterno");
+    expect(campos.find((campo) => campo.id === "segundoApellido").etiqueta).toBe("Apellido materno");
   });
 
   it("uses a single-select group field and individual document uploads", () => {
