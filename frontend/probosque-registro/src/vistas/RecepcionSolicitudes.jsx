@@ -6,6 +6,7 @@ import "./PanelSolicitudes.css";
 export default function RecepcionSolicitudes({ solicitudes = [], aprobadas = [], onAceptar, onRechazar }) {
   // Guardamos solo el id de la solicitud elegida, no el objeto completo
   const [seleccionadaId, setSeleccionadaId] = useState(null);
+  const [documentoPrevisualizadoId, setDocumentoPrevisualizadoId] = useState(null);
   const [faltantes, setFaltantes] = useState(""); // aviso de faltantes que leerá el solicitante
 
   // Buscamos el objeto completo cada vez que se renderiza
@@ -14,6 +15,7 @@ export default function RecepcionSolicitudes({ solicitudes = [], aprobadas = [],
 
   const elegir = (id) => {
     setSeleccionadaId(id);
+    setDocumentoPrevisualizadoId(null);
     setFaltantes("");
   };
 
@@ -95,12 +97,35 @@ export default function RecepcionSolicitudes({ solicitudes = [], aprobadas = [],
                 )}
               </dl>
 
-              {/* Los documentos se abren en otra pestaña para cotejarlos */}
+              {/* Los documentos se pueden abrir aparte o previsualizar en el expediente */}
               <h3 className="ps-subtitulo">Documentos ({seleccionada.documentos?.length ?? 0})</h3>
               <ul className="ps-documentos">
                 {(seleccionada.documentos ?? []).map((doc) => (
                   <li key={doc.id}>
                     <a href={doc.url} target="_blank" rel="noreferrer">{doc.nombre}</a>
+                    {doc.nombre.toLowerCase().endsWith(".pdf") && (
+                      <div className="ps-vista-pdf">
+                        <button
+                          type="button"
+                          className="ps-vista-pdf-boton"
+                          aria-expanded={documentoPrevisualizadoId === doc.id}
+                          aria-controls={`recepcion-pdf-${doc.id}`}
+                          onClick={() =>
+                            setDocumentoPrevisualizadoId((actual) => actual === doc.id ? null : doc.id)
+                          }
+                        >
+                          {documentoPrevisualizadoId === doc.id ? "Cerrar vista previa" : "Previsualizar PDF"}
+                        </button>
+                        {documentoPrevisualizadoId === doc.id && (
+                          <iframe
+                            id={`recepcion-pdf-${doc.id}`}
+                            className="ps-pdf"
+                            src={doc.url}
+                            title={`Vista previa de ${doc.nombre}`}
+                          />
+                        )}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>

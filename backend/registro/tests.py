@@ -77,7 +77,9 @@ class ApiRegistroTests(APITestCase):
             'programa': 'guardabosques',
             'fecha_apertura': (hoy - timedelta(days=1)).isoformat(),
             'fecha_clausura': (hoy + timedelta(days=30)).isoformat(),
-            'texto': 'Convocatoria de prueba',
+            'archivo_convocatoria': SimpleUploadedFile(
+                'convocatoria.pdf', b'%PDF-1.4', content_type='application/pdf',
+            ),
             'reglas_operacion': SimpleUploadedFile('ro.pdf', b'%PDF-1.4', content_type='application/pdf'),
         }, format='multipart')
 
@@ -94,10 +96,22 @@ class ApiRegistroTests(APITestCase):
         r = self.publicar_convocatoria()
         self.assertEqual(r.status_code, 201, r.data)
         self.assertEqual(r.data['estado'], 'abierta')
+        self.assertIn('/media/convocatorias/archivos/convocatoria', r.data['archivo_convocatoria'])
         self.assertIn('/media/convocatorias/ro', r.data['reglas_operacion'])
         r = self.client.get('/api/convocatorias/?programa=guardabosques')
         self.assertEqual(len(r.data), 1)
         self.assertEqual(self.client.get('/api/convocatorias/?programa=plantaciones').data, [])
+
+    def test_publicar_requiere_archivo_de_convocatoria(self):
+        hoy = timezone.localdate()
+        r = self.client.post('/api/convocatorias/', {
+            'programa': 'guardabosques',
+            'fecha_apertura': (hoy - timedelta(days=1)).isoformat(),
+            'fecha_clausura': (hoy + timedelta(days=30)).isoformat(),
+        }, format='multipart')
+
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('archivo_convocatoria', r.data)
 
     def test_registrar_solicitud_subir_documento_y_buscar_por_folio(self):
         convocatoria_id = self.publicar_convocatoria().data['id']

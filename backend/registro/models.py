@@ -39,7 +39,8 @@ class Convocatoria(models.Model):
     programa = models.ForeignKey(Programa, on_delete=models.PROTECT, related_name='convocatorias')
     fecha_apertura = models.DateField()
     fecha_clausura = models.DateField()
-    texto = models.TextField()
+    texto = models.TextField(blank=True)
+    archivo_convocatoria = models.FileField(upload_to='convocatorias/archivos/', blank=True)
     reglas_operacion = models.FileField(upload_to='convocatorias/', blank=True)
     # timezone.localdate usa TIME_ZONE (Ciudad de México), no la hora UTC del contenedor
     fecha_publicacion = models.DateField(default=timezone.localdate)
