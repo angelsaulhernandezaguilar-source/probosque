@@ -7,9 +7,10 @@ export default function PublicacionConvocatorias({ onVolver, onPublicar }) {
   const [fechaApertura, setFechaApertura] = useState("");
   const [fechaClausura, setFechaClausura] = useState("");
   const [reglas, setReglas] = useState(null);
-  const [texto, setTexto] = useState("");
+  const [archivoConvocatoria, setArchivoConvocatoria] = useState(null);
   const [arrastrando, setArrastrando] = useState(false);
   const inputArchivoRef = useRef(null);
+  const inputConvocatoriaRef = useRef(null);
   const formulario = formularioDePrograma(programa);
 
   const handleDrop = (e) => {
@@ -24,10 +25,21 @@ export default function PublicacionConvocatorias({ onVolver, onPublicar }) {
     if (archivo) setReglas(archivo);
   };
 
+  const handleDropConvocatoria = (e) => {
+    e.preventDefault();
+    const archivo = e.dataTransfer.files[0];
+    if (archivo) setArchivoConvocatoria(archivo);
+  };
+
+  const handleArchivoConvocatoria = (e) => {
+    const archivo = e.target.files[0];
+    if (archivo) setArchivoConvocatoria(archivo);
+  };
+
   const fechasInvalidas =
     fechaApertura && fechaClausura && fechaClausura < fechaApertura;
   const puedePublicar =
-    programa && formulario && fechaApertura && fechaClausura && reglas && texto.trim() && !fechasInvalidas;
+    programa && formulario && fechaApertura && fechaClausura && reglas && archivoConvocatoria && !fechasInvalidas;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -36,7 +48,7 @@ export default function PublicacionConvocatorias({ onVolver, onPublicar }) {
     datos.append("fechaApertura", fechaApertura);
     datos.append("fechaClausura", fechaClausura);
     datos.append("reglas", reglas);
-    datos.append("texto", texto);
+    datos.append("archivoConvocatoria", archivoConvocatoria);
     datos.append("campos", JSON.stringify(formulario.campos));
     onPublicar?.(datos);
   };
@@ -143,17 +155,31 @@ export default function PublicacionConvocatorias({ onVolver, onPublicar }) {
         </div>
       </section>
 
-      <section className="pc-caja pc-texto">
-        <label htmlFor="texto" className="pc-subtitulo pc-subtitulo--chico">
-          Texto de la convocatoria
-        </label>
-        <textarea
-          id="texto"
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
-          placeholder="Escribe aquí el texto de la convocatoria"
-          required
-        />
+      <section className="pc-caja">
+        <h2 className="pc-subtitulo">Subir archivo de convocatoria</h2>
+        <div
+          className={`pc-dropzone ${archivoConvocatoria ? "pc-dropzone--llena" : ""}`}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={handleDropConvocatoria}
+          onClick={() => inputConvocatoriaRef.current.click()}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") inputConvocatoriaRef.current.click();
+          }}
+        >
+          {archivoConvocatoria
+            ? archivoConvocatoria.name
+            : "Arrastra aquí el archivo de convocatoria o haz clic para elegirlo"}
+          <input
+            ref={inputConvocatoriaRef}
+            type="file"
+            accept=".pdf,.doc,.docx"
+            onChange={handleArchivoConvocatoria}
+            onClick={(e) => e.stopPropagation()}
+            hidden
+          />
+        </div>
       </section>
 
       <div className="pc-acciones">

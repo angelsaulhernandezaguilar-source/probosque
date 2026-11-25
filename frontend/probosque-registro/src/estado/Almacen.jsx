@@ -29,6 +29,8 @@ function convocatoriaDesdeApi(c) {
     fechaApertura: c.fecha_apertura,
     fechaClausura: c.fecha_clausura,
     texto: c.texto,
+    archivoConvocatoriaUrl: c.archivo_convocatoria,
+    archivoConvocatoriaNombre: nombreDeArchivo(c.archivo_convocatoria),
     publicadaEl: c.fecha_publicacion,
     reglasNombre: nombreDeArchivo(c.reglas_operacion) || "Sin archivo",
     reglasUrl: c.reglas_operacion, // HU-1.1-02: el público descarga las reglas de operación
@@ -105,12 +107,12 @@ export function ProveedorAlmacen({ children }) {
     recargar,
 
     // Dirección General · HU-1.1-01
-    async publicarConvocatoria({ programa, fechaApertura, fechaClausura, reglas, texto }) {
-      const datos = new FormData(); // FormData porque lleva el PDF de las reglas de operación
+    async publicarConvocatoria({ programa, fechaApertura, fechaClausura, reglas, archivoConvocatoria }) {
+      const datos = new FormData(); // FormData porque lleva los archivos de la convocatoria
       datos.append("programa", programa);
       datos.append("fecha_apertura", fechaApertura);
       datos.append("fecha_clausura", fechaClausura);
-      datos.append("texto", texto);
+      datos.append("archivo_convocatoria", archivoConvocatoria);
       if (reglas) datos.append("reglas_operacion", reglas);
       const creada = convocatoriaDesdeApi(await pedir("/convocatorias/", { metodo: "POST", datos }));
       setConvocatorias((actuales) => [...actuales, creada]);

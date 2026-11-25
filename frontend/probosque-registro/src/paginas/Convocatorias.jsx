@@ -67,7 +67,15 @@ export default function Convocatorias() {
           return (
             <article key={c.id} className="convocatoria">
               <h2>{nombrePrograma(c.programa)}</h2>
-              <p className="convocatoria-texto">{c.texto}</p>
+              {c.archivoConvocatoriaUrl ? (
+                <p className="convocatoria-texto">
+                  <a href={c.archivoConvocatoriaUrl} target="_blank" rel="noreferrer">
+                    Ver archivo de convocatoria: {c.archivoConvocatoriaNombre}
+                  </a>
+                </p>
+              ) : c.texto ? (
+                <p className="convocatoria-texto">{c.texto}</p>
+              ) : null}
               <ul className="convocatoria-meta">
                 <li>
                   Reglas de operación:{" "}

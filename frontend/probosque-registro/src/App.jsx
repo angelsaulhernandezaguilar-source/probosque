@@ -36,7 +36,7 @@ function RutaPublicar() {
               fechaApertura: formData.get("fechaApertura"),
               fechaClausura: formData.get("fechaClausura"),
               reglas: formData.get("reglas"), // el archivo completo: Django lo guarda en media/
-              texto: formData.get("texto").trim(),
+              archivoConvocatoria: formData.get("archivoConvocatoria"),
             });
             navegar("/");
           } catch (error) {

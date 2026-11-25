@@ -46,9 +46,16 @@ class ConvocatoriaSerializer(ReglasDelModeloMixin, serializers.ModelSerializer):
         model = Convocatoria
         fields = [
             'id', 'programa', 'programa_nombre', 'ejercicio', 'fecha_apertura', 'fecha_clausura',
-            'texto', 'reglas_operacion', 'fecha_publicacion', 'estado', 'total_solicitudes',
+            'texto', 'archivo_convocatoria', 'reglas_operacion', 'fecha_publicacion', 'estado', 'total_solicitudes',
         ]
         read_only_fields = ['fecha_publicacion']
+
+    def validate(self, attrs):
+        if self.instance is None and not attrs.get('archivo_convocatoria'):
+            raise serializers.ValidationError(
+                {'archivo_convocatoria': 'Debes subir el archivo de la convocatoria.'}
+            )
+        return super().validate(attrs)
 
 
 class DocumentoSerializer(ReglasDelModeloMixin, serializers.ModelSerializer):

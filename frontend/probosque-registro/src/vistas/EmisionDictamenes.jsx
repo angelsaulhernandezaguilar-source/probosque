@@ -5,12 +5,14 @@ import "./PanelSolicitudes.css";
 // Cada solicitud: { id, folio, nombre, plazo: "texto", documentos: [{ id, nombre, url }] }
 export default function EmisionDictamenes({ solicitudes = [], aprobadas = [], onFavorable, onDesfavorable }) {
   const [seleccionadaId, setSeleccionadaId] = useState(null);
+  const [documentoPrevisualizadoId, setDocumentoPrevisualizadoId] = useState(null);
   const [observaciones, setObservaciones] = useState(""); // fundamento del dictamen
   const seleccionada = [...solicitudes, ...aprobadas].find((s) => s.id === seleccionadaId);
   const seleccionadaPendiente = solicitudes.some((s) => s.id === seleccionadaId);
 
   const elegir = (id) => {
     setSeleccionadaId(id);
+    setDocumentoPrevisualizadoId(null);
     setObservaciones("");
   };
 
@@ -86,6 +88,29 @@ export default function EmisionDictamenes({ solicitudes = [], aprobadas = [], on
                 {seleccionada.documentos.map((doc) => (
                   <li key={doc.id}>
                     <a href={doc.url} target="_blank" rel="noreferrer">{doc.nombre}</a>
+                    {doc.nombre.toLowerCase().endsWith(".pdf") && (
+                      <div className="ps-vista-pdf">
+                        <button
+                          type="button"
+                          className="ps-vista-pdf-boton"
+                          aria-expanded={documentoPrevisualizadoId === doc.id}
+                          aria-controls={`dictamen-pdf-${doc.id}`}
+                          onClick={() =>
+                            setDocumentoPrevisualizadoId((actual) => actual === doc.id ? null : doc.id)
+                          }
+                        >
+                          {documentoPrevisualizadoId === doc.id ? "Cerrar vista previa" : "Previsualizar PDF"}
+                        </button>
+                        {documentoPrevisualizadoId === doc.id && (
+                        <iframe
+                          id={`dictamen-pdf-${doc.id}`}
+                          className="ps-pdf"
+                          src={doc.url}
+                          title={`Vista previa de ${doc.nombre}`}
+                        />
+                        )}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
