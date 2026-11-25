@@ -221,7 +221,7 @@ Ruta: `~/Desktop/probosque`. Es la carpeta del proyecto real (antes se llamaba `
 
 ```
 probosque/
-├── docker-compose.yml            ← db (postgis/postgis:16-3.4, con healthcheck) y backend
+├── docker-compose.yml            ← db (postgis/postgis:16-3.4, con healthcheck) y backend (monta ./docs en /docs, solo lectura)
 ├── backend/
 │   ├── Dockerfile                ← Python 3.12 + GDAL 3.6
 │   ├── requirements.txt          ← Django 5.2, DRF, DRF-GIS, django-filter, cors, drf-spectacular, psycopg
@@ -276,6 +276,7 @@ probosque/
 - Convocatorias: Plantaciones (con su RO real) y RHF.
 - Solicitudes: `PS-2026-0001` (KML falso, sin polígono), `RHF-2026-0002` (RECIBIDA, con polígono) y `RHF-2026-0003` (prueba del flujo completo, JURIDICO_FAVORABLE).
 - `docs/pruebas/predio_las_trancas.kml`: polígono ficticio en Amecameca.
+- Comando `registro/management/commands/datos_prueba.py` para el equipo; guía de arranque en `docs/GUIA_EQUIPO.md`.
 
 ### Pendientes conocidos
 - Pantalla de ventanilla en React (HU-1.2-02) y formulario de Guardabosques.
@@ -303,6 +304,7 @@ Antes hice un proyecto de práctica, también llamado `probosque`, con la app `g
 | `docker compose exec backend python manage.py migrate` | Aplica las migraciones |
 | `docker compose exec backend python manage.py startapp <nombre>` | Crea una app |
 | `docker compose exec backend python manage.py createsuperuser` | Usuario para el admin |
+| `docker compose exec backend python manage.py datos_prueba` | Carga 6 convocatorias abiertas (con su RO) y 6 solicitudes en cada estado; no duplica (correos `@datos-prueba.mx`) |
 | `docker compose exec backend python manage.py test registro aprobacion` | Corre las pruebas (usa una base temporal) |
 | `docker compose exec db psql -U probosque -d probosque` | Entra a la base (`\dt` lista tablas, `\q` sale) |
 | `npm run dev` (en `frontend/probosque-registro`) | Levanta React en http://localhost:5173 |

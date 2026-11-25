@@ -17,8 +17,10 @@ Proyecto escolar de **Formulación y Evaluación de Proyectos de Investigación*
 
 ## Cómo levantarlo la primera vez
 
+> Guía completa para el equipo (acceso, datos de prueba, base de datos, ramas y problemas comunes): [docs/GUIA_EQUIPO.md](docs/GUIA_EQUIPO.md)
+
 ```bash
-git clone <URL del repositorio>
+git clone https://github.com/nicolas090705/probosque.git
 cd probosque
 
 # 1. Base de datos y backend (la primera vez tarda: descarga PostGIS y GDAL)
@@ -30,7 +32,10 @@ docker compose exec backend python manage.py migrate
 # 3. Usuario para el admin de Django (opcional)
 docker compose exec backend python manage.py createsuperuser
 
-# 4. Frontend
+# 4. Datos de prueba: 6 convocatorias abiertas y 6 solicitudes en distintos estados
+docker compose exec backend python manage.py datos_prueba
+
+# 5. Frontend
 cd frontend/probosque-registro
 npm install
 npm run dev
@@ -51,6 +56,7 @@ npm run dev
 | `docker compose logs backend` | Muestra los errores del backend |
 | `docker compose exec backend python manage.py makemigrations` | Crea migraciones después de cambiar un modelo |
 | `docker compose exec backend python manage.py migrate` | Aplica las migraciones |
+| `docker compose exec backend python manage.py datos_prueba` | Carga datos de prueba (no duplica si ya estaban) |
 | `docker compose exec backend python manage.py test registro aprobacion` | Corre las pruebas del backend |
 | `npm test` (en `frontend/probosque-registro`) | Corre las pruebas del frontend |
 | `docker compose down` | Apaga todo y **conserva** los datos |

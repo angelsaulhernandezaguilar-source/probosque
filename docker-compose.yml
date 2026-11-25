@@ -22,6 +22,7 @@ services:
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./backend:/app
+      - ./docs:/docs:ro   # solo lectura: el comando datos_prueba toma de aquí las RO y el KML de ejemplo
     ports:
       - "8000:8000"
     environment:

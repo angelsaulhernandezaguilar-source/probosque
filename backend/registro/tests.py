@@ -180,3 +180,22 @@ class ApiRegistroTests(APITestCase):
             al_reves = al_reves.replace(lon, b'LON').replace(lat, lon).replace(b'LON', lat)
         r = self.subir_sig(self.nueva_solicitud_api(), 'al_reves.kml', al_reves)
         self.assertEqual(r.status_code, 400)
+
+
+@override_settings(MEDIA_ROOT=MEDIA_PRUEBAS)
+class DatosPruebaTests(TestCase):
+    """El comando datos_prueba carga solicitudes en cada estado y no duplica si se corre dos veces."""
+
+    def test_carga_una_vez_y_respeta_las_reglas(self):
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        call_command('datos_prueba', stdout=StringIO())
+        call_command('datos_prueba', stdout=StringIO())  # la segunda vez no debe agregar nada
+        solicitudes = Solicitud.objects.filter(correo__endswith='@datos-prueba.mx')
+        self.assertEqual(solicitudes.count(), 6)
+        self.assertEqual(Convocatoria.objects.count(), 6)  # una abierta por programa
+        estados = set(solicitudes.values_list('estado', flat=True))
+        self.assertEqual(estados, {'RECIBIDA', 'SUBSANACION', 'EN_DICTAMEN', 'JURIDICO_FAVORABLE', 'NO_FACTIBLE'})
+        self.assertFalse(solicitudes.filter(ubicacion__isnull=True).exists())  # el KML llenó la ubicación
