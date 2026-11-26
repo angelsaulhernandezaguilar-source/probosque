@@ -8,6 +8,7 @@ export default function RecepcionSolicitudes({ solicitudes = [], aprobadas = [],
   // Guardamos solo el id de la solicitud elegida, no el objeto completo
   const [seleccionadaId, setSeleccionadaId] = useState(null);
   const [documentoPrevisualizadoId, setDocumentoPrevisualizadoId] = useState(null);
+  const [documentosRevisados, setDocumentosRevisados] = useState({});
   const [faltantes, setFaltantes] = useState(""); // aviso de faltantes que leerá el solicitante
 
   // Buscamos el objeto completo cada vez que se renderiza
@@ -19,6 +20,7 @@ export default function RecepcionSolicitudes({ solicitudes = [], aprobadas = [],
   const elegir = (id) => {
     setSeleccionadaId(id);
     setDocumentoPrevisualizadoId(null);
+    setDocumentosRevisados({});
     setFaltantes("");
     mostrarEnCelular(detalleRef); // en pantallas angostas el detalle queda abajo de la lista
   };
@@ -107,6 +109,19 @@ export default function RecepcionSolicitudes({ solicitudes = [], aprobadas = [],
                 {(seleccionada.documentos ?? []).map((doc) => (
                   <li key={doc.id}>
                     <a href={doc.url} target="_blank" rel="noreferrer">{doc.nombre}</a>
+                    <label className="ps-documento-revision">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(documentosRevisados[doc.id])}
+                        onChange={(e) =>
+                          setDocumentosRevisados((actuales) => ({
+                            ...actuales,
+                            [doc.id]: e.target.checked,
+                          }))
+                        }
+                      />
+                      Revisado y correcto
+                    </label>
                     {doc.nombre.toLowerCase().endsWith(".pdf") && (
                       <div className="ps-vista-pdf">
                         <button

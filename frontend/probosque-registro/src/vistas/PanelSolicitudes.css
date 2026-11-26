@@ -159,6 +159,22 @@
   font-weight: 600;
 }
 
+.ps-documento-revision {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  margin-top: 8px;
+  color: var(--tinta-suave);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.ps-documento-revision input {
+  width: auto;
+  margin: 0;
+}
+
 .ps-vista-pdf {
   margin-top: 8px;
 }
