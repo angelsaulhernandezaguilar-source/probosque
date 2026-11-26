@@ -1,12 +1,17 @@
 import { useState } from "react";
-import { HashRouter, Link, NavLink, Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
-import { ESTADOS, nombrePrograma, normalizarProgramaId } from "./datos/catalogos";
-import { camposDeConvocatoria, etiquetaCompleta, formatearRespuesta } from "./datos/camposFormulario";
+import { HashRouter, Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
+import { ESTADOS, ESTADO_CORTO, ETIQUETA_ESTADO, TONO_ESTADO, nombrePrograma, normalizarProgramaId } from "./datos/catalogos";
+import { camposDeConvocatoria, etiquetaCompleta, formatearRespuesta, formularioDePrograma } from "./datos/camposFormulario";
+import { ROLES, descripcionDeUsuario, seccionesDe } from "./datos/usuarios";
 import { ProveedorAlmacen, useAlmacen } from "./estado/Almacen";
+import { ProveedorSesion, useSesion } from "./estado/Sesion";
 import EnlaceUbicacion from "./componentes/EnlaceUbicacion";
 import Convocatorias from "./paginas/Convocatorias";
+import Documento from "./paginas/Documento";
 import Estatus from "./paginas/Estatus";
-import { calcularApoyo, estadoConvocatoria, fechaLarga, pesos } from "./utilidades/reglas";
+import Ingreso from "./paginas/Ingreso";
+import Listados from "./paginas/Listados";
+import { calcularApoyo, estadoConvocatoria, fechaLarga, pesos, solicitudDelMismoPredio } from "./utilidades/reglas";
 import EmisionDictamenes from "./vistas/EmisionDictamenes";
 import PublicacionConvocatorias from "./vistas/PublicacionConvocatorias";
 import RecepcionSolicitudes from "./vistas/RecepcionSolicitudes";
@@ -18,6 +23,29 @@ import "./App.css";
 // Aviso de error o de "enviando..." arriba de una pantalla
 const Aviso = ({ texto }) =>
   texto ? <p className="app-aviso app-aviso--suelto" role="status">{texto}</p> : null;
+
+// Ruta protegida: solo entra quien inició sesión con uno de los roles permitidos.
+// Sin sesión manda a "Ingresar" (y recuerda a dónde iba); con otro rol avisa que no tiene acceso.
+function Protegida({ roles, children }) {
+  const { usuario } = useSesion();
+  const ubicacion = useLocation();
+  if (!usuario) {
+    const volver = encodeURIComponent(ubicacion.pathname + ubicacion.search);
+    return <Navigate to={`/ingresar?volver=${volver}`} replace />;
+  }
+  if (!roles.includes(usuario.rol)) {
+    return (
+      <div className="app-pagina app-pagina--angosta">
+        <h1 className="app-titulo">Sin acceso</h1>
+        <p className="app-vacio">
+          Esta pantalla no corresponde a tu cuenta ({descripcionDeUsuario(usuario)}). Usa las secciones de la
+          barra superior o cierra sesión para entrar con otra cuenta.
+        </p>
+      </div>
+    );
+  }
+  return children;
+}
 
 function RutaPublicar() {
   const { publicarConvocatoria } = useAlmacen();
@@ -50,7 +78,8 @@ function RutaPublicar() {
 
 function RutaRegistro() {
   const { id } = useParams();
-  const { convocatorias, cargando, registrarSolicitud } = useAlmacen();
+  const { convocatorias, solicitudes, cargando, registrarSolicitud } = useAlmacen();
+  const { usuario } = useSesion();
   const navegar = useNavigate();
   const [aviso, setAviso] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -66,6 +95,14 @@ function RutaRegistro() {
       <Aviso texto={aviso} />
       <RegistroConvocatoria
         nombrePrograma={nombrePrograma(convocatoria.programa)}
+        formato={formularioDePrograma(convocatoria.programa)?.nombre}
+        solicitante={usuario.nombre}
+        fijos={{ correo: usuario.correo }} // la solicitud queda ligada a la cuenta por su correo
+        validarPredio={(respuestas) =>
+          solicitudDelMismoPredio(solicitudes, convocatoria.id, respuestas.Nombre_predio, respuestas.Municipio_predio)
+            ? "Este predio ya tiene una solicitud registrada en esta convocatoria. Un predio no se puede registrar dos veces."
+            : ""
+        }
         campos={camposDeConvocatoria(convocatoria)}
         conConceptos={normalizarProgramaId(convocatoria.programa) === "plantaciones"}
         onRegresar={() => navegar("/")}
@@ -75,7 +112,7 @@ function RutaRegistro() {
           setAviso("Enviando solicitud y documentos...");
           try {
             const solicitud = await registrarSolicitud(convocatoria, respuestas, archivos);
-            navegar(`/estatus?folio=${solicitud.folio}&nuevo=1`);
+            navegar(`/acuse/${solicitud.folio}?nuevo=1`); // el acuse con folio es el comprobante del registro
           } catch (error) {
             setAviso(`No se registró: ${error.message}`);
             window.scrollTo(0, 0);
@@ -107,9 +144,19 @@ const nombreCompleto = (solicitud, convocatorias) => {
     : solicitud.folio;
 };
 
+// Lo que las bandejas muestran del estado de un expediente: píldora corta, texto largo y color
+const estadoDe = (s) => ({
+  etiquetaEstado: ESTADO_CORTO[s.estado],
+  estadoLargo: ETIQUETA_ESTADO[s.estado],
+  tono: TONO_ESTADO[s.estado],
+});
+
 function RutaRecepcion() {
-  const { solicitudes, convocatorias, aceptarSolicitud, rechazarSolicitud } = useAlmacen();
+  const { solicitudes: todas, convocatorias, aceptarSolicitud, rechazarSolicitud } = useAlmacen();
+  const { usuario } = useSesion();
   const [aviso, setAviso] = useState("");
+  // Cada ventanilla solo ve los expedientes de los municipios que atiende su delegación
+  const solicitudes = todas.filter((s) => s.delegacion === usuario.delegacion);
 
   const prepararSolicitud = (s) => {
     const convocatoria = convocatorias.find((c) => c.id === s.convocatoriaId);
@@ -119,8 +166,12 @@ function RutaRecepcion() {
       id: s.id,
       folio: s.folio,
       nombre: nombreCompleto(s, convocatorias),
+      programa: convocatoria ? nombrePrograma(convocatoria.programa) : "",
+      ...estadoDe(s),
+      poligono: s.poligono,
       documentos: s.documentos,
       detalles: [
+        ["Acuse de recepción", <Link key="acuse" to={`/acuse/${s.folio}`}>Ver acuse (PDF)</Link>],
         ["Registrada el", fechaLarga(s.registradaEl)],
         ["Notificar faltantes a más tardar", fechaLarga(s.limiteAvisoFaltantes)], // N5: 10 días naturales
         ["Ubicación del predio", <EnlaceUbicacion key="ubicacion" ubicacion={s.ubicacion} />],
@@ -139,8 +190,11 @@ function RutaRecepcion() {
   const pendientes = solicitudes
     .filter((s) => s.estado === ESTADOS.RECIBIDA)
     .map(prepararSolicitud);
-  const aprobadas = solicitudes
-    .filter((s) => s.estado === ESTADOS.EN_DICTAMEN)
+  const enSubsanacion = solicitudes
+    .filter((s) => s.estado === ESTADOS.SUBSANACION)
+    .map(prepararSolicitud);
+  const atendidas = solicitudes
+    .filter((s) => s.estado !== ESTADOS.RECIBIDA && s.estado !== ESTADOS.SUBSANACION)
     .map(prepararSolicitud);
 
   const folioDe = (id) => solicitudes.find((s) => s.id === id)?.folio;
@@ -149,8 +203,10 @@ function RutaRecepcion() {
     <>
       {aviso && <p className="app-aviso app-aviso--suelto" role="status">{aviso}</p>}
       <RecepcionSolicitudes
+        delegacion={usuario.delegacion}
         solicitudes={pendientes}
-        aprobadas={aprobadas}
+        enSubsanacion={enSubsanacion}
+        atendidas={atendidas}
         onAceptar={async (id) => {
           try {
             await aceptarSolicitud(id);
@@ -180,11 +236,18 @@ function RutaDictamenes() {
     id: s.id,
     folio: s.folio,
     nombre: nombreCompleto(s, convocatorias),
+    programa: nombrePrograma(s.programa),
+    ...estadoDe(s),
     documentos: s.documentos,
     plazo: `Dictaminar a más tardar el ${fechaLarga(s.fechaLimiteDictamen)} (45 días hábiles).`, // N5
+    // Dictamen ya emitido: se abre como documento y se descarga en PDF
+    pie: <Link to={`/dictamen/${s.folio}`}>Ver dictamen en PDF</Link>,
   });
   const enDictamen = solicitudes.filter((s) => s.estado === ESTADOS.EN_DICTAMEN).map(preparar);
-  const dictamenesAprobados = solicitudes.filter((s) => s.estado === ESTADOS.JURIDICO_FAVORABLE).map(preparar);
+  // Emitidos: favorables y desfavorables, cada uno con su estado
+  const emitidos = solicitudes
+    .filter((s) => s.estado === ESTADOS.JURIDICO_FAVORABLE || s.estado === ESTADOS.NO_FACTIBLE)
+    .map(preparar);
 
   const folioDe = (id) => solicitudes.find((s) => s.id === id)?.folio;
 
@@ -193,7 +256,7 @@ function RutaDictamenes() {
       {aviso && <p className="app-aviso app-aviso--suelto" role="status">{aviso}</p>}
       <EmisionDictamenes
         solicitudes={enDictamen}
-        aprobadas={dictamenesAprobados}
+        emitidos={emitidos}
         onFavorable={async (id, observaciones) => {
           try {
             await dictaminar(id, true, observaciones);
@@ -217,39 +280,65 @@ function RutaDictamenes() {
 
 function Navegacion() {
   const { solicitudes } = useAlmacen();
-  const cuenta = (estado) => solicitudes.filter((s) => s.estado === estado).length;
-  const enlaces = [
-    { a: "/", texto: "Convocatorias", rol: "Público" },
-    { a: "/estatus", texto: "Mi estatus", rol: "Beneficiario" },
-    { a: "/publicar", texto: "Publicar", rol: "Dirección General" },
-    { a: "/recepcion", texto: "Recepción", rol: "Delegación", pendientes: cuenta(ESTADOS.RECIBIDA) },
-    { a: "/dictamenes", texto: "Dictámenes", rol: "Unidad jurídica", pendientes: cuenta(ESTADOS.EN_DICTAMEN) },
-  ];
+  const { usuario, salir } = useSesion();
+  const navegar = useNavigate();
+
+  // Pendientes de cada bandeja; la delegación solo cuenta los expedientes de sus municipios
+  const pendientes = {
+    "/recepcion": solicitudes.filter(
+      (s) => s.estado === ESTADOS.RECIBIDA && s.delegacion === usuario?.delegacion
+    ).length,
+    "/dictamenes": solicitudes.filter((s) => s.estado === ESTADOS.EN_DICTAMEN).length,
+    "/listados": solicitudes.filter((s) => s.estado === ESTADOS.JURIDICO_FAVORABLE).length,
+  };
+
   return (
     <header className="app-barra">
       <div className="app-barra-interior">
-      <Link className="app-marca" to="/">
-        <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
-          <path d="M17 3 9 14h4l-6 8h5l-5 7h20l-5-7h5l-6-8h4z" fill="#8fc49a" />
-          <rect x="15.5" y="27" width="3" height="5" fill="#8fc49a" />
-        </svg>
-        <div>
-          <strong>PROBOSQUE</strong>
-          <span>Convocatorias forestales 2026</span>
-        </div>
-      </Link>
-      <nav className="app-nav" aria-label="Secciones">
-        {enlaces.map((e) => (
-          <NavLink key={e.a} to={e.a} end={e.a === "/"}>
-            <span className="app-nav-texto">
-              {e.texto}
-              {e.pendientes > 0 && <b className="app-contador">{e.pendientes}</b>}
-            </span>
-            <small>{e.rol}</small>
-          </NavLink>
-        ))}
-      </nav>
+        <Link className="app-marca" to="/">
+          <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+            <path d="M17 3 9 14h4l-6 8h5l-5 7h20l-5-7h5l-6-8h4z" fill="#8fc49a" />
+            <rect x="15.5" y="27" width="3" height="5" fill="#8fc49a" />
+          </svg>
+          <div>
+            <strong>PROBOSQUE</strong>
+            <span>Convocatorias forestales 2026</span>
+          </div>
+        </Link>
+        {/* El menú cambia con el rol: cada usuario solo ve sus pantallas */}
+        <nav className="app-nav" aria-label="Secciones">
+          {seccionesDe(usuario).map((e) => (
+            <NavLink key={e.a} to={e.a} end={e.a === "/"}>
+              <span className="app-nav-texto">
+                {e.texto}
+                {pendientes[e.a] > 0 && <b className="app-contador">{pendientes[e.a]}</b>}
+              </span>
+            </NavLink>
+          ))}
+          {!usuario && <NavLink className="app-nav-ingresar" to="/ingresar">Ingresar</NavLink>}
+        </nav>
       </div>
+      {/* Quién tiene la sesión iniciada y con qué rol */}
+      {usuario && (
+        <div className="app-barra-usuario">
+          <div>
+            <p className="app-usuario">
+              <strong>{usuario.nombre}</strong>
+              <span>{descripcionDeUsuario(usuario)} · {usuario.correo}</span>
+            </p>
+            <button
+              type="button"
+              className="app-enlace"
+              onClick={() => {
+                salir();
+                navegar("/");
+              }}
+            >
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
+      )}
     </header>
   );
 }
@@ -281,24 +370,34 @@ function AvisoConexion() {
 }
 
 export default function App() {
+  const { SOLICITANTE, DIRECCION, DELEGACION, JURIDICO, COMITE } = ROLES;
   return (
-    <ProveedorAlmacen>
-      <HashRouter>
-        <Navegacion />
-        <main className="app-principal">
-          <AvisoConexion />
-          <Routes>
-            <Route path="/" element={<Convocatorias />} />
-            <Route path="/publicar" element={<RutaPublicar />} />
-            <Route path="/registro/:id" element={<RutaRegistro />} />
-            <Route path="/recepcion" element={<RutaRecepcion />} />
-            <Route path="/dictamenes" element={<RutaDictamenes />} />
-            <Route path="/estatus" element={<Estatus />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </main>
-        <Pie />
-      </HashRouter>
-    </ProveedorAlmacen>
+    <ProveedorSesion>
+      <ProveedorAlmacen>
+        <HashRouter>
+          <Navegacion />
+          <main className="app-principal">
+            <AvisoConexion />
+            <Routes>
+              {/* Públicas */}
+              <Route path="/" element={<Convocatorias />} />
+              <Route path="/ingresar" element={<Ingreso />} />
+              {/* Persona solicitante */}
+              <Route path="/registro/:id" element={<Protegida roles={[SOLICITANTE]}><RutaRegistro /></Protegida>} />
+              <Route path="/estatus" element={<Protegida roles={[SOLICITANTE]}><Estatus /></Protegida>} />
+              <Route path="/acuse/:folio" element={<Protegida roles={[SOLICITANTE, DELEGACION]}><Documento tipo="acuse" /></Protegida>} />
+              {/* Personal de PROBOSQUE */}
+              <Route path="/publicar" element={<Protegida roles={[DIRECCION]}><RutaPublicar /></Protegida>} />
+              <Route path="/recepcion" element={<Protegida roles={[DELEGACION]}><RutaRecepcion /></Protegida>} />
+              <Route path="/dictamenes" element={<Protegida roles={[JURIDICO]}><RutaDictamenes /></Protegida>} />
+              <Route path="/dictamen/:folio" element={<Protegida roles={[JURIDICO, COMITE]}><Documento tipo="dictamen" /></Protegida>} />
+              <Route path="/listados" element={<Protegida roles={[COMITE]}><Listados /></Protegida>} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </main>
+          <Pie />
+        </HashRouter>
+      </ProveedorAlmacen>
+    </ProveedorSesion>
   );
 }

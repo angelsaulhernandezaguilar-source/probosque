@@ -283,3 +283,43 @@
   .rc-opciones--lista { grid-template-columns: minmax(0, 1fr); }
   .rc-acciones { flex-direction: column-reverse; }
 }
+
+/* Encabezado del formato oficial (FO-PB-501A / 501B) */
+.rc-encabezado {
+  margin-bottom: 12px;
+  padding-bottom: 18px;
+  border-bottom: 3px solid var(--pino);
+}
+
+.rc-formato {
+  margin: 0 0 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--pino);
+}
+
+.rc-encabezado-datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 40px;
+  margin: 14px 0 0;
+}
+
+.rc-encabezado-datos dt {
+  font-size: 0.8rem;
+  color: var(--tinta-suave);
+}
+
+.rc-encabezado-datos dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+/* Campos que llena el sistema (delegación) o que vienen de la cuenta (correo) */
+.rc-campo input[readonly] {
+  border-style: dashed;
+  background: var(--salvia);
+  color: var(--tinta-suave);
+}

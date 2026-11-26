@@ -487,6 +487,105 @@ h3 {
   overflow-wrap: anywhere; /* nombres de archivo largos no rompen el ancho */
 }
 
+/* ---------- Usuario con sesión iniciada (barra superior) ---------- */
+.app-barra-usuario {
+  background: var(--pino);
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.app-barra-usuario > div {
+  max-width: var(--ancho);
+  margin: 0 auto;
+  padding: 6px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px 16px;
+}
+
+.app-usuario {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  margin: 0;
+}
+
+.app-usuario strong {
+  font-weight: 700;
+}
+
+.app-usuario span {
+  color: #d5e3d8;
+}
+
+.app-barra-usuario .app-enlace {
+  color: #fff;
+}
+
+.app-nav a.app-nav-ingresar {
+  justify-content: center;
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  font-weight: 700;
+}
+
+/* ---------- Mis solicitudes ---------- */
+.estatus-lista {
+  margin: 0 0 24px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.estatus-fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 16px;
+  width: 100%;
+  padding: 12px 18px;
+  border: 1px solid var(--linea);
+  border-radius: 10px;
+  background: var(--superficie);
+  text-align: left;
+  cursor: pointer;
+}
+
+.estatus-fila:hover {
+  border-color: var(--pino);
+}
+
+.estatus-fila--activa {
+  border-color: var(--pino);
+  background: var(--musgo);
+  box-shadow: inset 5px 0 0 var(--pino);
+}
+
+.estatus-fila strong {
+  display: block;
+  font-variant-numeric: tabular-nums;
+}
+
+.estatus-acuse {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 24px;
+  margin-top: 20px;
+  padding: 14px 18px;
+  border-radius: var(--radio-control);
+  background: var(--salvia);
+}
+
+.estatus-acuse p {
+  margin: 0;
+}
+
 /* ---------- Consulta de estatus ---------- */
 .app-busqueda {
   display: flex;
@@ -659,6 +758,7 @@ h3 {
 
 @media (max-width: 720px) {
   .app-barra-interior { padding: 10px 16px; }
+  .app-barra-usuario > div { padding: 6px 16px; justify-content: space-between; }
   /* Menú en una sola fila que se desliza con el dedo (antes ocupaba 3 renglones) */
   .app-nav {
     flex-wrap: nowrap;

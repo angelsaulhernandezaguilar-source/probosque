@@ -141,18 +141,21 @@ Listo: 6 convocatorias abiertas y 6 solicitudes de prueba.
 | Programa | Estado | Para probar |
 |---|---|---|
 | Plantaciones | Recibida | Recepción: aceptar o rechazar |
-| Restauración | Subsanación | Mi estatus: reemplazar archivos y reenviar |
+| Restauración | Subsanación | Mis solicitudes: reemplazar archivos y reenviar |
 | Servicios Ambientales | En dictamen | Dictámenes: favorable o desfavorable |
-| Capturando Carbono | Jurídico favorable | Lista de aprobadas |
+| Capturando Carbono | Jurídico favorable | Dictamen en PDF y Listados (techo presupuestal) |
 | Restauración | No factible | Dictamen desfavorable con su motivo |
 | Guardabosques | Recibida | Recepción (Guardabosques aún no tiene formulario en React) |
 
 - Cada solicitud trae el polígono de ejemplo (`docs/pruebas/predio_las_trancas.kml`, Amecameca), una identificación y una CURP de prueba en PDF, y una CLABE válida.
 - Los correos terminan en `@datos-prueba.mx`. Así el comando reconoce que ya cargó los datos: **si lo corres dos veces, no duplica nada**.
 
-### Consultar el estatus de una solicitud de prueba
+### Entrar al portal con cada rol
 
-En el portal, entra a **Mi estatus** y escribe el folio que te mostró el comando (por ejemplo `RHF-2026-0002`).
+El portal pide iniciar sesión y muestra solo las pantallas del rol (el detalle está en `frontend/probosque-registro/README.md`):
+
+- **Personal de PROBOSQUE:** en **Ingresar** están las cuentas de demostración (Dirección General, una ventanilla por delegación, Unidad Jurídica y Comité). Todas usan la contraseña `probosque2026`. Cada ventanilla solo ve los expedientes de su delegación.
+- **Solicitante de prueba:** en **Ingresar → Crea tu cuenta** usa el correo de la solicitud que quieras ver, de `solicitante1@datos-prueba.mx` a `solicitante6@datos-prueba.mx` (en el orden de la tabla), y entra a **Mis solicitudes**. Ahí están el estatus, el polígono en el mapa y el acuse en PDF.
 
 ### Volver a empezar desde cero
 

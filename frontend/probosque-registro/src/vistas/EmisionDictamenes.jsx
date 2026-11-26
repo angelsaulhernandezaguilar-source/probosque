@@ -1,14 +1,17 @@
 import { useRef, useState } from "react";
 import { mostrarEnCelular } from "../utilidades/pantalla";
+import { GrupoExpedientes } from "./RecepcionSolicitudes";
 import "./PanelSolicitudes.css";
 
 // HU-2.4-01 · Emisión de dictamen jurídico (Unidad Jurídica)
-// Cada solicitud: { id, folio, nombre, plazo: "texto", documentos: [{ id, nombre, url }] }
-export default function EmisionDictamenes({ solicitudes = [], aprobadas = [], onFavorable, onDesfavorable }) {
+// Cada solicitud: { id, folio, nombre, programa, etiquetaEstado, tono, estadoLargo, plazo: "texto",
+//                   documentos: [{ id, nombre, url }], pie: enlace al dictamen en PDF (solo emitidos) }
+//   solicitudes → en dictamen (se puede emitir)      emitidos → ya dictaminadas, favorables o no
+export default function EmisionDictamenes({ solicitudes = [], emitidos = [], onFavorable, onDesfavorable }) {
   const [seleccionadaId, setSeleccionadaId] = useState(null);
   const [documentoPrevisualizadoId, setDocumentoPrevisualizadoId] = useState(null);
   const [observaciones, setObservaciones] = useState(""); // fundamento del dictamen
-  const seleccionada = [...solicitudes, ...aprobadas].find((s) => s.id === seleccionadaId);
+  const seleccionada = [...solicitudes, ...emitidos].find((s) => s.id === seleccionadaId);
   const seleccionadaPendiente = solicitudes.some((s) => s.id === seleccionadaId);
 
   const detalleRef = useRef(null); // para bajar al detalle en el celular
@@ -20,6 +23,8 @@ export default function EmisionDictamenes({ solicitudes = [], aprobadas = [], on
     mostrarEnCelular(detalleRef); // en pantallas angostas el detalle queda abajo de la lista
   };
 
+  const grupo = { seleccionadaId, onElegir: elegir };
+
   return (
     <div className="ps-pagina">
       <header className="ps-encabezado">
@@ -28,57 +33,22 @@ export default function EmisionDictamenes({ solicitudes = [], aprobadas = [], on
       </header>
 
       <div className="ps-listas">
-        <section className="ps-grupo" aria-labelledby="ps-aprobadas-titulo">
-          <h2 className="ps-grupo-titulo" id="ps-aprobadas-titulo">
-            Aprobadas <span>{aprobadas.length}</span>
-          </h2>
-          <ul className="ps-lista">
-            {aprobadas.length === 0 ? (
-              <li className="ps-lista-vacia">Aún no hay dictámenes aprobados.</li>
-            ) : (
-              aprobadas.map((s) => (
-                <li key={s.id}>
-                  <button
-                    type="button"
-                    className={`ps-fila ps-fila--aprobada ${s.id === seleccionadaId ? "ps-fila--activa" : ""}`}
-                    aria-pressed={s.id === seleccionadaId}
-                    onClick={() => elegir(s.id)}
-                  >
-                    <span className="ps-folio">{s.folio}</span>
-                    <span className="ps-nombre">{s.nombre}</span>
-                    <span className="ps-accion">Ver dictamen</span>
-                  </button>
-                </li>
-              ))
-            )}
-          </ul>
-        </section>
-
-        <section className="ps-grupo" aria-labelledby="ps-pendientes-titulo">
-          <h2 className="ps-grupo-titulo" id="ps-pendientes-titulo">
-            Pendientes <span>{solicitudes.length}</span>
-          </h2>
-          <ul className="ps-lista">
-            {solicitudes.length === 0 ? (
-              <li className="ps-lista-vacia">No hay solicitudes pendientes de dictamen jurídico.</li>
-            ) : (
-              solicitudes.map((s) => (
-                <li key={s.id}>
-                  <button
-                    type="button"
-                    className={`ps-fila ${s.id === seleccionadaId ? "ps-fila--activa" : ""}`}
-                    aria-pressed={s.id === seleccionadaId}
-                    onClick={() => elegir(s.id)}
-                  >
-                    <span className="ps-folio">{s.folio}</span>
-                    <span className="ps-nombre">{s.nombre}</span>
-                    <span className="ps-accion">Revisar documentos</span>
-                  </button>
-                </li>
-              ))
-            )}
-          </ul>
-        </section>
+        <GrupoExpedientes
+          {...grupo}
+          id="ps-pendientes-titulo"
+          titulo="Pendientes"
+          vacio="No hay solicitudes pendientes de dictamen jurídico."
+          accion="Revisar documentos"
+          expedientes={solicitudes}
+        />
+        <GrupoExpedientes
+          {...grupo}
+          id="ps-emitidos-titulo"
+          titulo="Dictámenes emitidos"
+          vacio="Aún no se ha emitido ningún dictamen."
+          accion="Ver dictamen"
+          expedientes={emitidos}
+        />
       </div>
 
       {/* Documentos de la solicitud elegida */}
@@ -86,7 +56,16 @@ export default function EmisionDictamenes({ solicitudes = [], aprobadas = [], on
         <div className="ps-detalle-cuerpo">
           {seleccionada ? (
             <>
-              <h2 className="ps-detalle-titulo">Documentos de {seleccionada.nombre}</h2>
+              {/* Encabezado del expediente: folio, programa y estado */}
+              <header className="ps-expediente">
+                <div>
+                  <p className="ps-expediente-folio">Expediente {seleccionada.folio}</p>
+                  <h2 className="ps-detalle-titulo">{seleccionada.nombre}</h2>
+                  {seleccionada.programa && <p className="ps-expediente-programa">{seleccionada.programa}</p>}
+                </div>
+                <span className={`app-etiqueta ${seleccionada.tono ?? ""}`}>{seleccionada.estadoLargo}</span>
+              </header>
+              <h3 className="ps-subtitulo">Documentos ({seleccionada.documentos.length})</h3>
               {seleccionadaPendiente && seleccionada.plazo && <p className="ps-plazo">{seleccionada.plazo}</p>}
               <ul className="ps-documentos">
                 {seleccionada.documentos.map((doc) => (
@@ -120,7 +99,7 @@ export default function EmisionDictamenes({ solicitudes = [], aprobadas = [], on
               </ul>
             </>
           ) : (
-            <p className="ps-vacio">Elige una solicitud con “Revisar documentos” para ver su lista.</p>
+            <p className="ps-vacio">Elige una solicitud para ver su expediente.</p>
           )}
         </div>
 
@@ -154,7 +133,10 @@ export default function EmisionDictamenes({ solicitudes = [], aprobadas = [], on
             </div>
           </>
         ) : seleccionada ? (
-          <p className="ps-estado-aprobado">Dictamen jurídico favorable aprobado.</p>
+          <p className="ps-estado-aprobado">
+            {seleccionada.estadoLargo}
+            {seleccionada.pie}
+          </p>
         ) : null}
       </section>
     </div>

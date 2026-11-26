@@ -53,6 +53,7 @@ function solicitudDesdeApi(s) {
     id: s.id,
     folio: s.folio,
     convocatoriaId: s.convocatoria,
+    programa: s.programa, // clave del programa: "plantaciones", "restauracion"...
     registradaEl: s.fecha_registro,
     estado: s.estado,
     limiteSubsanacion: s.limite_subsanacion,
@@ -60,6 +61,7 @@ function solicitudDesdeApi(s) {
     // Documentos con su URL para abrirlos (Recepción y Dictámenes)
     documentos: s.documentos.map((d) => ({ id: d.id, tipo: d.tipo, nombre: d.nombre, url: d.archivo })),
     ubicacion: s.ubicacion, // GeoJSON { type: "Point", coordinates: [longitud, latitud] } o null
+    poligono: s.poligono, // GeoJSON MultiPolygon con los límites del predio (lo dibuja MapaPredio) o null
     limiteAvisoFaltantes: s.limite_aviso_faltantes, // N5: plazos calculados por Django
     fechaLimiteDictamen: s.fecha_limite_dictamen,
   };
@@ -176,6 +178,12 @@ export function ProveedorAlmacen({ children }) {
         datos: { solicitud: id, tipo: "JURIDICO", resultado: favorable ? "FAVORABLE" : "DESFAVORABLE", observaciones },
       });
       actualizar(await pedir(`/solicitudes/${id}/`)); // el dictamen cambió el estado: se pide de nuevo
+    },
+
+    // Dictamen jurídico ya emitido de una solicitud (para generar su PDF). null si no tiene.
+    async dictamenJuridicoDe(id) {
+      const dictamenes = await pedir(`/dictamenes/?solicitud=${id}&tipo=JURIDICO`);
+      return dictamenes[0] ?? null; // la API los ordena del más reciente al más antiguo
     },
   };
 

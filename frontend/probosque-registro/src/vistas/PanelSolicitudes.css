@@ -76,8 +76,52 @@
   border-color: var(--pino);
 }
 
-.ps-fila--aprobada .ps-accion {
-  color: var(--pino);
+/* Tres columnas en Recepción: por cotejar, en subsanación y atendidas */
+.ps-listas--tres {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* Folio a la izquierda y estado del expediente a la derecha */
+.ps-fila-arriba {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 10px;
+  margin-bottom: 4px;
+}
+
+.ps-estado {
+  padding: 1px 10px;
+  font-size: 0.75rem;
+}
+
+/* Encabezado del expediente elegido */
+.ps-expediente {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--linea);
+}
+
+.ps-expediente .ps-detalle-titulo {
+  margin: 0;
+}
+
+.ps-expediente-folio,
+.ps-expediente-programa {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--tinta-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+.ps-estado-aprobado a {
+  margin-left: 16px;
 }
 
 .ps-fila--activa {
@@ -277,7 +321,8 @@
 
 @media (max-width: 820px) {
   .ps-pagina { padding: 28px 16px 0; gap: 20px; }
-  .ps-listas { grid-template-columns: 1fr; gap: 20px; }
+  .ps-listas,
+  .ps-listas--tres { grid-template-columns: 1fr; gap: 20px; }
   .ps-entrada { margin-bottom: 8px; }
   .ps-detalle-cuerpo { padding: 20px; min-height: 0; }
   .ps-acciones { flex-direction: column-reverse; padding: 16px 20px; }

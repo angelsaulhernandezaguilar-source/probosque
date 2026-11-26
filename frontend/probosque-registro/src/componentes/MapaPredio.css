@@ -1,0 +1,17 @@
+.mapa-predio {
+  width: 100%;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-control);
+  background: var(--musgo);
+  /* El mapa no debe tapar la barra ni los avisos */
+  position: relative;
+  z-index: 0;
+}
+
+.mapa-vacio {
+  margin: 0;
+  padding: 16px 18px;
+  border: 1.5px dashed #9fb0a3;
+  border-radius: var(--radio-control);
+  color: var(--tinta-suave);
+}

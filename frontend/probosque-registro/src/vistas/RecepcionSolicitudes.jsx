@@ -1,10 +1,58 @@
 import { useRef, useState } from "react";
+import MapaPredio from "../componentes/MapaPredio";
 import { mostrarEnCelular } from "../utilidades/pantalla";
 import "./PanelSolicitudes.css";
 
+// Una columna de la bandeja: título con contador y las filas de sus expedientes.
+// Cada fila muestra el estado del expediente en una píldora de color.
+export function GrupoExpedientes({ id, titulo, vacio, expedientes, seleccionadaId, accion = "Ver", onElegir }) {
+  return (
+    <section className="ps-grupo" aria-labelledby={id}>
+      <h2 className="ps-grupo-titulo" id={id}>
+        {titulo} <span>{expedientes.length}</span>
+      </h2>
+      <ul className="ps-lista">
+        {expedientes.length === 0 ? (
+          <li className="ps-lista-vacia">{vacio}</li>
+        ) : (
+          expedientes.map((s) => (
+            <li key={s.id}>
+              <button
+                type="button"
+                className={`ps-fila ${s.id === seleccionadaId ? "ps-fila--activa" : ""}`}
+                aria-pressed={s.id === seleccionadaId}
+                onClick={() => onElegir(s.id)}
+              >
+                <span className="ps-fila-arriba">
+                  <span className="ps-folio">{s.folio}</span>
+                  <span className={`app-etiqueta ps-estado ${s.tono ?? ""}`}>{s.etiquetaEstado}</span>
+                </span>
+                <span className="ps-nombre">{s.nombre}</span>
+                <span className="ps-accion">{accion}</span>
+              </button>
+            </li>
+          ))
+        )}
+      </ul>
+    </section>
+  );
+}
+
 // HU-2.1-01 · Recepción y validación de expedientes (Delegación Regional)
-// Cada solicitud: { id, folio, nombre, detalles: [[etiqueta, valor], ...], documentos: [{ id, nombre, url }] }
-export default function RecepcionSolicitudes({ solicitudes = [], aprobadas = [], onAceptar, onRechazar }) {
+// Cada expediente: { id, folio, nombre, programa, etiquetaEstado, tono, estadoLargo, poligono,
+//                    detalles: [[etiqueta, valor], ...], documentos: [{ id, nombre, url }] }
+// (etiquetaEstado = texto corto de la píldora; estadoLargo = estado completo en el expediente)
+//   solicitudes    → por cotejar (se pueden aceptar o rechazar)
+//   enSubsanacion  → se pidieron faltantes y corre el plazo del solicitante
+//   atendidas      → ya salieron de la delegación (en dictamen, favorables o no factibles)
+export default function RecepcionSolicitudes({
+  delegacion,
+  solicitudes = [],
+  enSubsanacion = [],
+  atendidas = [],
+  onAceptar,
+  onRechazar,
+}) {
   // Guardamos solo el id de la solicitud elegida, no el objeto completo
   const [seleccionadaId, setSeleccionadaId] = useState(null);
   const [documentoPrevisualizadoId, setDocumentoPrevisualizadoId] = useState(null);
@@ -12,7 +60,7 @@ export default function RecepcionSolicitudes({ solicitudes = [], aprobadas = [],
   const [faltantes, setFaltantes] = useState(""); // aviso de faltantes que leerá el solicitante
 
   // Buscamos el objeto completo cada vez que se renderiza
-  const seleccionada = [...solicitudes, ...aprobadas].find((s) => s.id === seleccionadaId);
+  const seleccionada = [...solicitudes, ...enSubsanacion, ...atendidas].find((s) => s.id === seleccionadaId);
   const seleccionadaPendiente = solicitudes.some((s) => s.id === seleccionadaId);
 
   const detalleRef = useRef(null); // para bajar al detalle en el celular
@@ -25,65 +73,41 @@ export default function RecepcionSolicitudes({ solicitudes = [], aprobadas = [],
     mostrarEnCelular(detalleRef); // en pantallas angostas el detalle queda abajo de la lista
   };
 
+  const grupo = { seleccionadaId, onElegir: elegir };
+
   return (
     <div className="ps-pagina">
       <header className="ps-encabezado">
         <h1 className="ps-titulo">Recepción de solicitudes</h1>
-        <p className="ps-entrada">Coteja los documentos de cada solicitud. Si está completa, pasa a dictamen jurídico; si faltan documentos, escribe cuáles y el solicitante tendrá 5 días hábiles para subsanar.</p>
+        <p className="ps-entrada">
+          {delegacion ? `Expedientes de la Delegación Regional Forestal ${delegacion}. ` : ""}
+          Coteja los documentos de cada solicitud. Si está completa, pasa a dictamen jurídico; si faltan documentos, escribe cuáles y el solicitante tendrá 5 días hábiles para subsanar.
+        </p>
       </header>
 
-      <div className="ps-listas">
-        <section className="ps-grupo" aria-labelledby="ps-aprobadas-titulo">
-          <h2 className="ps-grupo-titulo" id="ps-aprobadas-titulo">
-            Aprobadas <span>{aprobadas.length}</span>
-          </h2>
-          <ul className="ps-lista">
-            {aprobadas.length === 0 ? (
-              <li className="ps-lista-vacia">Aún no hay solicitudes aprobadas.</li>
-            ) : (
-              aprobadas.map((s) => (
-                <li key={s.id}>
-                  <button
-                    type="button"
-                    className={`ps-fila ps-fila--aprobada ${s.id === seleccionadaId ? "ps-fila--activa" : ""}`}
-                    aria-pressed={s.id === seleccionadaId}
-                    onClick={() => elegir(s.id)}
-                  >
-                    <span className="ps-folio">{s.folio}</span>
-                    <span className="ps-nombre">{s.nombre}</span>
-                    <span className="ps-accion">Ver</span>
-                  </button>
-                </li>
-              ))
-            )}
-          </ul>
-        </section>
-
-        <section className="ps-grupo" aria-labelledby="ps-pendientes-titulo">
-          <h2 className="ps-grupo-titulo" id="ps-pendientes-titulo">
-            Pendientes <span>{solicitudes.length}</span>
-          </h2>
-          <ul className="ps-lista">
-            {solicitudes.length === 0 ? (
-              <li className="ps-lista-vacia">No hay solicitudes pendientes de cotejo.</li>
-            ) : (
-              solicitudes.map((s) => (
-                <li key={s.id}>
-                  <button
-                    type="button"
-                    className={`ps-fila ${s.id === seleccionadaId ? "ps-fila--activa" : ""}`}
-                    aria-pressed={s.id === seleccionadaId}
-                    onClick={() => elegir(s.id)}
-                  >
-                    <span className="ps-folio">{s.folio}</span>
-                    <span className="ps-nombre">{s.nombre}</span>
-                    <span className="ps-accion">Ver</span>
-                  </button>
-                </li>
-              ))
-            )}
-          </ul>
-        </section>
+      <div className="ps-listas ps-listas--tres">
+        <GrupoExpedientes
+          {...grupo}
+          id="ps-pendientes-titulo"
+          titulo="Por cotejar"
+          vacio="No hay solicitudes pendientes de cotejo."
+          accion="Cotejar"
+          expedientes={solicitudes}
+        />
+        <GrupoExpedientes
+          {...grupo}
+          id="ps-subsanacion-titulo"
+          titulo="En subsanación"
+          vacio="Ninguna solicitud está esperando documentos."
+          expedientes={enSubsanacion}
+        />
+        <GrupoExpedientes
+          {...grupo}
+          id="ps-atendidas-titulo"
+          titulo="Atendidas"
+          vacio="Aún no hay expedientes turnados."
+          expedientes={atendidas}
+        />
       </div>
 
       {/* Detalle de la solicitud elegida */}
@@ -91,7 +115,16 @@ export default function RecepcionSolicitudes({ solicitudes = [], aprobadas = [],
         <div className="ps-detalle-cuerpo">
           {seleccionada ? (
             <>
-              <h2 className="ps-detalle-titulo">{seleccionada.nombre}</h2>
+              {/* Encabezado del expediente: folio, programa y estado */}
+              <header className="ps-expediente">
+                <div>
+                  <p className="ps-expediente-folio">Expediente {seleccionada.folio}</p>
+                  <h2 className="ps-detalle-titulo">{seleccionada.nombre}</h2>
+                  {seleccionada.programa && <p className="ps-expediente-programa">{seleccionada.programa}</p>}
+                </div>
+                <span className={`app-etiqueta ${seleccionada.tono ?? ""}`}>{seleccionada.estadoLargo}</span>
+              </header>
+
               <dl className="ps-datos">
                 {(seleccionada.detalles ?? []).map(
                   ([etiqueta, valor]) => (
@@ -103,25 +136,31 @@ export default function RecepcionSolicitudes({ solicitudes = [], aprobadas = [],
                 )}
               </dl>
 
+              {/* El polígono se dibuja con el GeoJSON que guardó Django (HU-1.3-01) */}
+              <h3 className="ps-subtitulo">Polígono del predio</h3>
+              <MapaPredio poligono={seleccionada.poligono} />
+
               {/* Los documentos se pueden abrir aparte o previsualizar en el expediente */}
               <h3 className="ps-subtitulo">Documentos ({seleccionada.documentos?.length ?? 0})</h3>
               <ul className="ps-documentos">
                 {(seleccionada.documentos ?? []).map((doc) => (
                   <li key={doc.id}>
                     <a href={doc.url} target="_blank" rel="noreferrer">{doc.nombre}</a>
-                    <label className="ps-documento-revision">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(documentosRevisados[doc.id])}
-                        onChange={(e) =>
-                          setDocumentosRevisados((actuales) => ({
-                            ...actuales,
-                            [doc.id]: e.target.checked,
-                          }))
-                        }
-                      />
-                      Revisado y correcto
-                    </label>
+                    {seleccionadaPendiente && (
+                      <label className="ps-documento-revision">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(documentosRevisados[doc.id])}
+                          onChange={(e) =>
+                            setDocumentosRevisados((actuales) => ({
+                              ...actuales,
+                              [doc.id]: e.target.checked,
+                            }))
+                          }
+                        />
+                        Revisado y correcto
+                      </label>
+                    )}
                     {doc.nombre.toLowerCase().endsWith(".pdf") && (
                       <div className="ps-vista-pdf">
                         <button
@@ -150,7 +189,7 @@ export default function RecepcionSolicitudes({ solicitudes = [], aprobadas = [],
               </ul>
             </>
           ) : (
-            <p className="ps-vacio">Selecciona una solicitud con “Ver” para revisarla.</p>
+            <p className="ps-vacio">Selecciona una solicitud para revisar su expediente.</p>
           )}
         </div>
 
@@ -184,7 +223,7 @@ export default function RecepcionSolicitudes({ solicitudes = [], aprobadas = [],
             </div>
           </>
         ) : seleccionada ? (
-          <p className="ps-estado-aprobado">Documentación aprobada; pasó a dictamen jurídico.</p>
+          <p className="ps-estado-aprobado">{seleccionada.estadoLargo}</p>
         ) : null}
       </section>
     </div>

@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { ESTADOS, ETIQUETA_ESTADO, nombrePrograma } from "../datos/catalogos";
+import { Link, useSearchParams } from "react-router-dom";
+import { ESTADOS, ESTADO_CORTO, ETIQUETA_ESTADO, TONO_ESTADO, nombrePrograma } from "../datos/catalogos";
 import { campoVisible, camposDeConvocatoria, etiquetaCompleta, formatearRespuesta } from "../datos/camposFormulario";
 import ZonaArchivo from "../componentes/ZonaArchivo";
 import { useAlmacen } from "../estado/Almacen";
+import { useSesion } from "../estado/Sesion";
 import EnlaceUbicacion from "../componentes/EnlaceUbicacion";
+import MapaPredio from "../componentes/MapaPredio";
 import { calcularApoyo, fechaLarga, pesos } from "../utilidades/reglas";
 
 // Qué mostrar en cada paso de la ruta según el estado de la solicitud
@@ -22,11 +24,6 @@ const PASOS = [
   ["Dictamen jurídico", "La Unidad jurídica revisa tu expediente"],
   ["Comité", "Dictamen técnico y listados de resultados"],
 ];
-
-const TONO = {
-  [ESTADOS.SUBSANACION]: "app-etiqueta--alerta",
-  [ESTADOS.NO_FACTIBLE]: "app-etiqueta--negativa",
-};
 
 // Subsanación: el solicitante ve qué le pidió la delegación y cambia solo los archivos que hagan falta.
 // Los campos que deje vacíos conservan su archivo actual.
@@ -106,14 +103,17 @@ function Subsanacion({ solicitud, campos, onReenviar }) {
   );
 }
 
-// Consulta de estatus por folio (necesidad #17)
+// Mis solicitudes (necesidad #17): la persona solicitante ve solo las solicitudes
+// registradas con el correo de su cuenta y abre la que quiera consultar.
 export default function Estatus() {
   const { solicitudes, convocatorias, cargando, reenviarDocumentacion } = useAlmacen();
+  const { usuario } = useSesion();
   const [parametros, setParametros] = useSearchParams();
-  const folio = (parametros.get("folio") ?? "").toUpperCase();
-  const [busqueda, setBusqueda] = useState(folio);
 
-  const solicitud = solicitudes.find((s) => s.folio === folio);
+  const mias = solicitudes.filter((s) => s.correo?.toLowerCase() === usuario.correo.toLowerCase());
+  const folio = (parametros.get("folio") ?? "").toUpperCase();
+  // Con una sola solicitud se abre directo; con varias, la que diga la dirección (?folio=)
+  const solicitud = mias.find((s) => s.folio === folio) ?? (mias.length === 1 ? mias[0] : undefined);
   const convocatoria = solicitud && convocatorias.find((c) => c.id === solicitud.convocatoriaId);
   const respuestas = solicitud && (solicitud.respuestas ?? solicitud);
   const campos = camposDeConvocatoria(convocatoria);
@@ -126,44 +126,53 @@ export default function Estatus() {
     (campo) => campo.tipo !== "file" && campo.tipo !== "checkbox" && respuestas[campo.id]
   );
   const apoyo = solicitud && calcularApoyo(solicitud.concepto, solicitud.superficie);
-
-  const buscar = (e) => {
-    e.preventDefault();
-    setParametros({ folio: busqueda.trim().toUpperCase() });
+  const programaDe = (s) => {
+    const c = convocatorias.find((item) => item.id === s.convocatoriaId);
+    return c ? nombrePrograma(c.programa) : "";
   };
 
   return (
     <div className="app-pagina app-pagina--angosta">
-      <h1 className="app-titulo">Mi solicitud</h1>
-      <p className="app-entrada">Escribe el folio que recibiste al registrarte para ver en qué paso va tu trámite.</p>
+      <h1 className="app-titulo">Mis solicitudes</h1>
+      <p className="app-entrada">
+        Aquí están las solicitudes registradas con tu cuenta ({usuario.correo}). Abre una para ver en qué
+        paso va tu trámite y descargar tu acuse.
+      </p>
 
-      <form className="app-busqueda" onSubmit={buscar}>
-        <div className="app-campo">
-          <label htmlFor="folio">Folio</label>
-          <input
-            id="folio"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="PS-2026-0001"
-          />
-        </div>
-        <button type="submit" className="app-boton app-boton--primario" disabled={!busqueda.trim()}>
-          Consultar
-        </button>
-      </form>
+      {cargando && mias.length === 0 && <p className="app-aviso" role="status">Cargando tus solicitudes...</p>}
 
-      {parametros.get("nuevo") && solicitud && (
-        <p className="app-aviso" role="status">
-          Registro guardado. Anota tu folio <strong>{solicitud.folio}</strong>: lo necesitas para
-          consultar el avance.
+      {!cargando && mias.length === 0 && (
+        <p className="app-vacio">
+          Todavía no tienes solicitudes. Revisa las <Link to="/">convocatorias abiertas</Link> y regístrate en
+          la que te corresponda.
         </p>
       )}
 
-      {folio && !solicitud && !cargando && (
-        <p className="app-vacio">
-          No hay ninguna solicitud con el folio {folio}. Revisa que esté escrito igual que en tu
-          comprobante, con guiones.
+      {folio && !solicitud && mias.length > 0 && (
+        <p className="app-aviso app-aviso--alerta" role="status">
+          No tienes ninguna solicitud con el folio {folio}.
         </p>
+      )}
+
+      {mias.length > 1 && (
+        <ul className="estatus-lista">
+          {mias.map((s) => (
+            <li key={s.id}>
+              <button
+                type="button"
+                className={`estatus-fila ${s.id === solicitud?.id ? "estatus-fila--activa" : ""}`}
+                aria-pressed={s.id === solicitud?.id}
+                onClick={() => setParametros({ folio: s.folio })}
+              >
+                <span>
+                  <strong>{s.folio}</strong>
+                  {programaDe(s)}
+                </span>
+                <span className={`app-etiqueta ${TONO_ESTADO[s.estado] ?? ""}`}>{ESTADO_CORTO[s.estado]}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
 
       {solicitud && (
@@ -176,10 +185,20 @@ export default function Estatus() {
                   ? `${campoInicial.etiqueta}: ${formatearRespuesta(campoInicial, respuestas[campoInicial.id])}`
                   : solicitud.folio)}
             </h2>
-            <span className={`app-etiqueta ${TONO[solicitud.estado] ?? ""}`}>
+            <span className={`app-etiqueta ${TONO_ESTADO[solicitud.estado] ?? ""}`}>
               {ETIQUETA_ESTADO[solicitud.estado]}
             </span>
           </header>
+
+          {/* Acuse con folio: comprobante de recepción y fecha en que se liberan los dictámenes */}
+          <div className="estatus-acuse">
+            <p>
+              {[ESTADOS.RECIBIDA, ESTADOS.SUBSANACION, ESTADOS.EN_DICTAMEN].includes(solicitud.estado)
+                ? <>Los dictámenes se liberan a más tardar el <strong>{fechaLarga(solicitud.fechaLimiteDictamen)}</strong> (45 días hábiles).</>
+                : "Tu solicitud ya fue dictaminada."}
+            </p>
+            <Link className="app-boton" to={`/acuse/${solicitud.folio}`}>Ver acuse (PDF)</Link>
+          </div>
 
           <ol className="ruta">
             {PASOS.map(([nombre, detalle], i) => {
@@ -204,6 +223,9 @@ export default function Estatus() {
               onReenviar={reenviarDocumentacion}
             />
           )}
+
+          <h3 className="app-subtitulo">Polígono del predio</h3>
+          <MapaPredio poligono={solicitud.poligono} />
 
           <h3 className="app-subtitulo">Datos de la solicitud</h3>
           <dl className="app-datos">

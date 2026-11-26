@@ -1,0 +1,159 @@
+/* Hoja de un documento oficial: se ve como papel en pantalla y sale limpia al imprimir */
+.doc-hoja {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 48px 56px;
+  background: #fff;
+  border: 1px solid var(--linea);
+  border-radius: 4px;
+  box-shadow: 0 10px 30px rgba(20, 35, 27, 0.08);
+  font-size: 0.98rem;
+}
+
+.doc-membrete {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 3px solid var(--pino);
+}
+
+.doc-membrete strong {
+  display: block;
+  font-family: var(--titulos);
+  font-size: 1.35rem;
+  color: var(--pino);
+}
+
+.doc-membrete span {
+  font-size: 0.85rem;
+  color: var(--tinta-suave);
+}
+
+.doc-folio {
+  text-align: right;
+}
+
+.doc-folio strong {
+  font-family: var(--texto);
+  font-size: 1.05rem;
+  color: var(--tinta);
+  font-variant-numeric: tabular-nums;
+}
+
+.doc-titulo {
+  margin-top: 28px;
+  font-size: 1.7rem;
+}
+
+.doc-subtitulo {
+  margin: 6px 0 0;
+  color: var(--tinta-suave);
+  font-size: 0.92rem;
+}
+
+.doc-seccion {
+  margin-top: 26px;
+}
+
+.doc-seccion h2 {
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--linea);
+  font-size: 1.05rem;
+  color: var(--pino);
+}
+
+.doc-seccion dl {
+  margin: 12px 0 0;
+}
+
+.doc-seccion dl div {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: 4px 24px;
+  padding: 4px 0;
+}
+
+.doc-seccion dt {
+  color: var(--tinta-suave);
+}
+
+.doc-seccion dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.doc-seccion ul {
+  margin: 12px 0 0;
+  padding-left: 20px;
+}
+
+.doc-seccion li {
+  padding: 2px 0;
+  overflow-wrap: anywhere;
+}
+
+.doc-seccion p {
+  margin: 12px 0 0;
+}
+
+.doc-firmas {
+  display: flex;
+  gap: 40px;
+  margin-top: 84px;
+}
+
+.doc-firmas p {
+  flex: 1;
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--tinta);
+  font-size: 0.85rem;
+  color: var(--tinta-suave);
+  text-align: center;
+}
+
+.doc-pie {
+  margin: 32px 0 0;
+  font-size: 0.82rem;
+  color: var(--tinta-suave);
+}
+
+/* Botones de arriba de la hoja */
+.doc-barra {
+  max-width: 800px;
+  margin: 0 auto 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.doc-barra-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+@media (max-width: 720px) {
+  .doc-hoja { padding: 28px 20px; }
+  .doc-membrete { flex-direction: column; }
+  .doc-folio { text-align: left; }
+  .doc-seccion dl div { grid-template-columns: 1fr; gap: 0; padding: 6px 0; }
+  .doc-firmas { flex-direction: column; gap: 64px; }
+}
+
+/* Al imprimir solo sale la hoja: sin barra, menú, avisos ni pie de la app */
+@media print {
+  .app-barra,
+  .app-pie,
+  .app-aviso,
+  .doc-barra {
+    display: none !important;
+  }
+  body { background: #fff; }
+  .app-principal { min-height: 0; padding: 0; }
+  .app-pagina { padding: 0; max-width: none; }
+  .doc-hoja { max-width: none; padding: 0; border: 0; box-shadow: none; }
+}

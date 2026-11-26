@@ -45,7 +45,7 @@ export default function Convocatorias() {
         <div className="inicio-banda-interior">
           <h1>Apoyos para plantar y cuidar el bosque</h1>
           <p>
-            Regístrate en línea a las convocatorias de PROBOSQUE y sigue tu solicitud con tu folio,
+            Regístrate en línea a las convocatorias de PROBOSQUE y sigue tu solicitud con tu cuenta,
             sin vueltas a la delegación.
           </p>
         </div>
@@ -118,7 +118,7 @@ export default function Convocatorias() {
         })}
 
         <div className="app-accesos">
-          <Link className="app-boton" to="/estatus">Consultar mi solicitud</Link>
+          <Link className="app-boton" to="/estatus">Consultar mis solicitudes</Link>
         </div>
       </div>
     </>
