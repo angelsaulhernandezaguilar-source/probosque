@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { mostrarEnCelular } from "../utilidades/pantalla";
 import "./PanelSolicitudes.css";
 
 // HU-2.4-01 · Emisión de dictamen jurídico (Unidad Jurídica)
@@ -10,10 +11,13 @@ export default function EmisionDictamenes({ solicitudes = [], aprobadas = [], on
   const seleccionada = [...solicitudes, ...aprobadas].find((s) => s.id === seleccionadaId);
   const seleccionadaPendiente = solicitudes.some((s) => s.id === seleccionadaId);
 
+  const detalleRef = useRef(null); // para bajar al detalle en el celular
+
   const elegir = (id) => {
     setSeleccionadaId(id);
     setDocumentoPrevisualizadoId(null);
     setObservaciones("");
+    mostrarEnCelular(detalleRef); // en pantallas angostas el detalle queda abajo de la lista
   };
 
   return (
@@ -78,7 +82,7 @@ export default function EmisionDictamenes({ solicitudes = [], aprobadas = [], on
       </div>
 
       {/* Documentos de la solicitud elegida */}
-      <section className="ps-detalle">
+      <section className="ps-detalle" ref={detalleRef}>
         <div className="ps-detalle-cuerpo">
           {seleccionada ? (
             <>

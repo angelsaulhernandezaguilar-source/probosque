@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ESTADOS, ETIQUETA_ESTADO, nombrePrograma } from "../datos/catalogos";
-import { camposDeConvocatoria, formatearRespuesta } from "../datos/camposFormulario";
+import { campoVisible, camposDeConvocatoria, etiquetaCompleta, formatearRespuesta } from "../datos/camposFormulario";
+import ZonaArchivo from "../componentes/ZonaArchivo";
 import { useAlmacen } from "../estado/Almacen";
 import EnlaceUbicacion from "../componentes/EnlaceUbicacion";
 import { calcularApoyo, fechaLarga, pesos } from "../utilidades/reglas";
@@ -77,19 +78,20 @@ function Subsanacion({ solicitud, campos, onReenviar }) {
                     ))
                   : "sin archivo"}
               </small>
-              <input
+              {/* Misma zona de arrastrar y soltar que en el registro */}
+              <ZonaArchivo
                 id={`sub-${campo.id}`}
-                type="file"
+                archivos={archivos[campo.id] ?? []}
                 accept={campo.accept}
                 multiple={campo.multiple}
-                onChange={(e) => {
-                  const lista = Array.from(e.target.files ?? []);
+                texto="Arrastra aquí el archivo corregido o haz clic para elegirlo"
+                onCambiar={(lista) =>
                   setArchivos((antes) => {
                     const siguiente = { ...antes, [campo.id]: lista };
                     if (!lista.length) delete siguiente[campo.id]; // si lo deja vacío, se conserva el actual
                     return siguiente;
-                  });
-                }}
+                  })
+                }
               />
             </li>
           );
@@ -198,7 +200,7 @@ export default function Estatus() {
           {solicitud.estado === ESTADOS.SUBSANACION && (
             <Subsanacion
               solicitud={solicitud}
-              campos={campos.filter((campo) => campo.tipo === "file")}
+              campos={campos.filter((campo) => campo.tipo === "file" && campoVisible(campo, respuestas))}
               onReenviar={reenviarDocumentacion}
             />
           )}
@@ -213,7 +215,7 @@ export default function Estatus() {
               const valor = formatearRespuesta(campo, respuestas[campo.id]);
               return valor ? (
                 <div key={campo.id} style={{ display: "contents" }}>
-                  <dt>{campo.etiqueta}</dt>
+                  <dt>{etiquetaCompleta(campo)}</dt>
                   <dd>{valor}</dd>
                 </div>
               ) : null;

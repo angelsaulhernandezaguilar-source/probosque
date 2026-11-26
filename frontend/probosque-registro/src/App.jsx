@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { HashRouter, Link, NavLink, Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { ESTADOS, nombrePrograma, normalizarProgramaId } from "./datos/catalogos";
-import { camposDeConvocatoria, formatearRespuesta } from "./datos/camposFormulario";
+import { camposDeConvocatoria, etiquetaCompleta, formatearRespuesta } from "./datos/camposFormulario";
 import { ProveedorAlmacen, useAlmacen } from "./estado/Almacen";
 import EnlaceUbicacion from "./componentes/EnlaceUbicacion";
 import Convocatorias from "./paginas/Convocatorias";
@@ -127,7 +127,7 @@ function RutaRecepcion() {
         ...camposDeConvocatoria(convocatoria)
           .filter((campo) => campo.tipo !== "file") // los archivos van en la lista de documentos
           .map((campo) => [
-            campo.etiqueta,
+            etiquetaCompleta(campo),
             formatearRespuesta(campo, respuestas[campo.id]),
           ])
           .filter(([, valor]) => valor),

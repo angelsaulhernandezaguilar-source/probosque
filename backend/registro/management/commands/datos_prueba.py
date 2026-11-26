@@ -47,7 +47,10 @@ def datos_comunes(predio, localidad, clabe_base):
         'Nombre_predio': predio,
         'Localidad_predio': localidad,
         'direccion': f'Domicilio conocido, {localidad}',
-        'gruposPrioritarios': 'Ninguno',
+        'esRefrendo': 'No',
+        'representanteLegal': 'No',
+        'designaSegundaPersona': 'No',
+        'gruposPrioritarios': ['Ninguno'],  # 1.4 admite varios grupos: es una lista
         'pmfVigente': 'No',
         'clabe': clabe_de_prueba(clabe_base),
         'declaracionNoLitigio': True,
