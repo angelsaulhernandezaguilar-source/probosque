@@ -61,7 +61,7 @@ describe("camposDeConvocatoria", () => {
     const certificaciones = campos.find((campo) => campo.id === "certificacionesFsc");
 
     expect(campos.map((campo) => campo.id)).toEqual(
-      expect.arrayContaining(["tipoPersona", "nombres", "telefono", "clabe", "validacionSig"])
+      expect.arrayContaining(["tipoPersona", "nombres", "telefono", "validacionSig"])
     );
     expect(estudios.tipo).toBe("checkbox-group");
     expect(estudios.opciones.map(({ valor }) => valor)).toEqual(
@@ -93,10 +93,10 @@ describe("camposDeConvocatoria", () => {
     expect(grupoPrioritario.tipo).toBe("checkbox-group");
     expect(grupoPrioritario.exclusiva).toBe("Ninguno");
     expect(grupoPrioritario.opciones.map(({ valor }) => valor)).toContain("Ninguno");
-    expect(documentos.find((campo) => campo.id === "identificacionOficial")).toMatchObject({
-      tipo: "file",
-      obligatorio: true,
-    });
+    const identificacion = documentos.find((campo) => campo.id === "identificacionOficial");
+    expect(identificacion.tipo).toBe("file");
+    // Es obligatoria salvo en refrendo (ver "ajustes de la revisión")
+    expect(campoObligatorio(identificacion, { esRefrendo: "No" })).toBe(true);
   });
 });
 
@@ -150,6 +150,64 @@ describe("campos que solo aplican en algunos casos", () => {
     // Debe elegir al menos un estudio técnico o una certificación
     expect(campoObligatorio(estudios, {})).toBe(true);
     expect(campoObligatorio(estudios, { certificacionesFsc: ["Declaración de servicios ecosistémicos"] })).toBe(false);
+  });
+});
+
+// Ajustes pedidos en la revisión del 25 de noviembre
+describe("ajustes de la revisión", () => {
+  const campos = (programa) => formularioDePrograma(programa).campos;
+  const campo = (programa, id) => campos(programa).find((c) => c.id === id);
+  const programas = PROGRAMAS_CON_FORMULARIO.map(({ id }) => id);
+
+  it("no longer asks for the CLABE or for observations in any form", () => {
+    for (const programa of programas) {
+      const ids = campos(programa).map((c) => c.id);
+      expect(ids).not.toContain("clabe");
+      expect(ids).not.toContain("observacionesDocumentos");
+      expect(ids).not.toContain("observacionesPrograma");
+    }
+  });
+
+  it("picks the municipio from the official list and derives the delegación from it", () => {
+    for (const programa of programas) {
+      const municipio = campo(programa, "Municipio_predio");
+      const delegacion = campo(programa, "delegacion");
+      expect(municipio.tipo).toBe("select");
+      expect(municipio.opciones).toHaveLength(125);
+      expect(delegacion.calcular({ Municipio_predio: "Zinacantepec" })).toBe("Toluca");
+      expect(delegacion.calcular({ Municipio_predio: "Amecameca" })).toBe("Amecameca");
+      expect(delegacion.calcular({})).toBe("");
+    }
+  });
+
+  it("always requires a second beneficiary; in a Núcleo Agrario it is a comisariado member", () => {
+    const cargo = campo("plantaciones", "segundaPersonaCargo");
+    const nombres = campo("plantaciones", "segundaPersonaNombres");
+    expect(campos("plantaciones").map((c) => c.id)).not.toContain("designaSegundaPersona");
+
+    expect(campoObligatorio(nombres, { tipoPersona: "Propietario" })).toBe(true);
+    expect(campoVisible(cargo, { tipoPersona: "Propietario" })).toBe(false);
+    expect(campoObligatorio(cargo, { tipoPersona: "Núcleo Agrario" })).toBe(true);
+    expect(campoVisible(nombres, { tipoPersona: "Núcleo Agrario" })).toBe(false);
+    expect(cargo.opciones.map(({ valor }) => valor)).toEqual(["Secretario(a)", "Tesorero(a)"]);
+
+    expect(campoObligatorio(campo("manejo-forestal", "segundaPersonaNombres"), {})).toBe(true);
+  });
+
+  it("in a refrendo only keeps the CURP, the FO-PB-502 and the polygon as mandatory documents", () => {
+    const nueva = { esRefrendo: "No", tipoPersona: "Núcleo Agrario", representanteLegal: "Sí" };
+    const refrendo = { ...nueva, esRefrendo: "Sí" };
+    const obligatorios = (respuestas) =>
+      campos("restauracion")
+        .filter((c) => c.tipo === "file" && campoObligatorio(c, respuestas))
+        .map((c) => c.id);
+
+    expect(obligatorios(nueva)).toEqual(
+      expect.arrayContaining(["identificacionOficial", "acreditaPropiedad", "actaIncorporacion", "acreditacionRepresentante"])
+    );
+    expect(obligatorios(refrendo).sort()).toEqual(["curp", "registroPersona", "validacionSig"]);
+    expect(campoObligatorio(campo("restauracion", "foliosRefrendo"), refrendo)).toBe(true);
+    expect(campoVisible(campo("restauracion", "foliosRefrendo"), nueva)).toBe(false);
   });
 });
 

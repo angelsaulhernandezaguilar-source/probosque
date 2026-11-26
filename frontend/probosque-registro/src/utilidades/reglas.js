@@ -82,3 +82,32 @@ export function calcularApoyo(conceptoId, superficie) {
 
 export const pesos = (monto) =>
   monto.toLocaleString("es-MX", { style: "currency", currency: "MXN" });
+
+// ---------- Predio repetido ----------
+
+const normalizar = (texto) =>
+  String(texto ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+
+// Un predio no se puede registrar dos veces en la misma convocatoria.
+// Se considera el mismo predio si coinciden nombre y municipio (sin importar acentos ni mayúsculas).
+// Una solicitud no factible ya terminó su trámite: no bloquea un registro nuevo.
+// Devuelve la solicitud que ya existe, o null.
+export function solicitudDelMismoPredio(solicitudes, convocatoriaId, nombrePredio, municipio) {
+  const nombre = normalizar(nombrePredio);
+  const lugar = normalizar(municipio);
+  if (!nombre || !lugar) return null;
+  return (
+    solicitudes.find(
+      (s) =>
+        s.convocatoriaId === convocatoriaId &&
+        s.estado !== "NO_FACTIBLE" &&
+        normalizar(s.Nombre_predio) === nombre &&
+        normalizar(s.Municipio_predio) === lugar
+    ) ?? null
+  );
+}

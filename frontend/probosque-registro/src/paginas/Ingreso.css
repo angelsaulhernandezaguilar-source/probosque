@@ -1,0 +1,91 @@
+.ingreso {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 4fr);
+  gap: 32px;
+  align-items: start;
+}
+
+.ingreso-formulario form {
+  display: grid;
+  gap: 16px;
+  max-width: 420px;
+}
+
+.ingreso-formulario small {
+  color: var(--tinta-suave);
+  font-size: 0.85rem;
+}
+
+.ingreso-error {
+  margin: 0;
+  padding: 10px 14px;
+  border-left: 5px solid var(--rojo);
+  border-radius: var(--radio-control);
+  background: var(--rojo-fondo);
+  color: var(--rojo);
+}
+
+.ingreso-cambio {
+  margin: 24px 0 0;
+  color: var(--tinta-suave);
+}
+
+.ingreso-demo h2 {
+  font-size: 1.15rem;
+}
+
+.ingreso-demo p {
+  margin: 8px 0 14px;
+  font-size: 0.92rem;
+  color: var(--tinta-suave);
+}
+
+.ingreso-demo code {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--musgo);
+  color: var(--pino-hondo);
+  font-size: 0.9em;
+}
+
+.ingreso-demo ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--linea);
+}
+
+.ingreso-demo li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--linea);
+}
+
+.ingreso-demo li strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.ingreso-demo li span {
+  font-size: 0.82rem;
+  color: var(--tinta-suave);
+  overflow-wrap: anywhere;
+}
+
+.ingreso-demo-boton {
+  flex: none;
+  padding: 5px 14px;
+  font-size: 0.9rem;
+}
+
+.ingreso-demo .ingreso-nota {
+  margin-top: 14px;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 820px) {
+  .ingreso { grid-template-columns: 1fr; }
+}

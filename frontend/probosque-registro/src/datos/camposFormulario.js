@@ -1,9 +1,5 @@
-import {
-  CONCEPTOS,
-  DELEGACIONES,
-  PROGRAMAS,
-  normalizarProgramaId,
-} from "./catalogos";
+import { CONCEPTOS, PROGRAMAS, normalizarProgramaId } from "./catalogos";
+import { MUNICIPIOS, delegacionDeMunicipio } from "./municipios";
 
 // Formularios de registro por programa.
 // El orden y los textos siguen los formatos oficiales que están en docs/analisis:
@@ -15,6 +11,9 @@ import {
 //   visibleSi(respuestas)   → el campo solo aparece cuando la función devuelve true
 //   obligatorio             → true/false, o una función(respuestas) para "obligatorio solo si..."
 // Un campo oculto no se valida ni se envía al servidor.
+// Otras dos propiedades opcionales:
+//   calcular(respuestas)    → el valor lo pone el sistema (no se captura): la delegación sale del municipio
+//   nota                    → texto de ayuda que se muestra debajo del campo
 
 // ---------- Constructores de campos ----------
 
@@ -84,7 +83,12 @@ const esNucleoAgrario = (r) => r.tipoPersona === "Núcleo Agrario";
 const esSociedad = (r) => r.tipoPersona === "Sociedad";
 const esPersonaColectiva = (r) => esNucleoAgrario(r) || esSociedad(r);
 const tieneRepresentante = (r) => r.representanteLegal === "Sí";
-const designaSegunda = (r) => r.designaSegundaPersona === "Sí";
+const esRefrendo = (r) => r.esRefrendo === "Sí";
+// Refrendo (RO Capturando Carbono, requisitos, fracc. X): solo se exige la Solicitud Única, el
+// FO-PB-502 y la CURP cuando la documentación legal del predio ya obra en los archivos de PROBOSQUE.
+// Los demás documentos se pueden subir (por si cambiaron), pero dejan de ser obligatorios.
+const salvoRefrendo = (r) => !esRefrendo(r);
+const SUB_SEGUNDA = "Segunda persona beneficiaria";
 
 // ---------- Secciones ----------
 
@@ -176,14 +180,19 @@ const camposPersona = ({ opcionesPersona, grupos, segundaEnTabla }) => [
     ancho: "completo",
   }),
 
-  // En el 501A la segunda persona beneficiaria está en la tabla I.3; en el 501B, en la autorización
+  // Segunda persona beneficiaria (RO, requisitos, fracc. II): toda solicitud debe designarla.
+  // En núcleos agrarios tiene que ser integrante del comisariado: se elige entre secretario(a)
+  // y tesorero(a), que ya están en la tabla I.3. En el 501B se captura en la autorización.
   ...(segundaEnTabla
     ? [
-        opcionUnica("designaSegundaPersona", "¿Designa una segunda persona beneficiaria?", ["Sí", "No"], true, {
-          seccion: SECCION_PERSONA,
-          ancho: "completo",
-        }),
-        ...filaNombre("segundaPersona", "Segunda persona beneficiaria", true, designaSegunda),
+        opcionUnica(
+          "segundaPersonaCargo",
+          "Integrante del comisariado que será la segunda persona beneficiaria",
+          ["Secretario(a)", "Tesorero(a)"],
+          true,
+          { seccion: SECCION_PERSONA, subseccion: SUB_SEGUNDA, ancho: "completo", visibleSi: esNucleoAgrario }
+        ),
+        ...filaNombre("segundaPersona", SUB_SEGUNDA, true, (r) => !esNucleoAgrario(r)),
       ]
     : []),
 
@@ -194,7 +203,8 @@ const camposPersona = ({ opcionesPersona, grupos, segundaEnTabla }) => [
     { seccion: SECCION_PERSONA, obligatorio: true, exclusiva: "Ninguno", ancho: "completo" }
   ),
 
-  // Datos que necesita el sistema para avisar del trámite y pagar el apoyo
+  // Datos que necesita el sistema para avisar del trámite.
+  // La CLABE ya no se pide aquí: los datos bancarios se capturan hasta que la solicitud se aprueba.
   texto("telefono", "Teléfono", true, { tipo: "tel", seccion: SECCION_PERSONA, subseccion: "Datos de contacto" }),
   texto("correo", "Correo electrónico para recibir notificaciones", true, {
     tipo: "email",
@@ -202,12 +212,6 @@ const camposPersona = ({ opcionesPersona, grupos, segundaEnTabla }) => [
     subseccion: "Datos de contacto",
   }),
   texto("direccion", "Domicilio", true, { seccion: SECCION_PERSONA, subseccion: "Datos de contacto", ancho: "completo" }),
-  texto("clabe", "CLABE interbancaria (18 dígitos) para recibir el apoyo", true, {
-    seccion: SECCION_PERSONA,
-    subseccion: "Datos de contacto",
-    maxLength: 18,
-    pattern: "\\d{18}",
-  }),
 ];
 
 // ---------- II. Predio ----------
@@ -218,19 +222,29 @@ const poligono = (extra = {}) =>
     ...extra,
   });
 
+// El municipio se elige de la lista oficial y la delegación se asigna sola: así no se puede
+// mandar una solicitud a una delegación que no atiende ese municipio.
+const municipioDelPredio = () =>
+  lista("Municipio_predio", "Municipio", MUNICIPIOS, true, { seccion: SECCION_PREDIO });
+
+const delegacionDelPredio = () =>
+  texto("delegacion", "Delegación Regional Forestal que corresponde al predio", true, {
+    seccion: SECCION_PREDIO,
+    calcular: (r) => delegacionDeMunicipio(r.Municipio_predio),
+    nota: "Se asigna según el municipio del predio (tabla de municipios de las Reglas de Operación).",
+  });
+
 const camposPredio501A = () => [
   texto("Nombre_predio", "Nombre del predio (con base en la documentación legal)", true, {
     seccion: SECCION_PREDIO,
     ancho: "completo",
   }),
-  texto("Municipio_predio", "Municipio", true, { seccion: SECCION_PREDIO }),
+  municipioDelPredio(),
   texto("Localidad_predio", "Población o localidad", true, { seccion: SECCION_PREDIO }),
   opcionUnica("pmfVigente", "Predio con PMF vigente", ["Sí", "No", "Certificado"], true, {
     seccion: SECCION_PREDIO,
   }),
-  lista("delegacion", "Delegación Regional Forestal que corresponde al predio", DELEGACIONES, true, {
-    seccion: SECCION_PREDIO,
-  }),
+  delegacionDelPredio(),
   poligono({ seccion: SECCION_PREDIO, obligatorio: true }),
 ];
 
@@ -239,12 +253,10 @@ const camposPredio501B = () => [
     seccion: SECCION_PREDIO,
     ancho: "completo",
   }),
-  texto("Municipio_predio", "Municipio", true, { seccion: SECCION_PREDIO }),
+  municipioDelPredio(),
   texto("Localidad_predio", "Población o localidad", true, { seccion: SECCION_PREDIO }),
   numero("superficiePredio", "Superficie total del predio o predios (ha)", true, { seccion: SECCION_PREDIO }),
-  lista("delegacion", "Delegación Regional Forestal que corresponde al predio", DELEGACIONES, true, {
-    seccion: SECCION_PREDIO,
-  }),
+  delegacionDelPredio(),
 ];
 
 // ---------- IV. Documentación ----------
@@ -257,47 +269,38 @@ const documentos501A = () => [
   documento(
     "identificacionOficial",
     "1. Identificación oficial vigente con fotografía (si no trae domicilio, agrega comprobante de domicilio no mayor a tres meses)",
-    true,
+    salvoRefrendo,
     undefined,
     { multiple: true }
   ),
   documento("curp", "2. Clave Única de Registro de Población (CURP) actualizada", true),
   documento("registroPersona", "3. FO-PB-502 Registro de Información de la persona solicitante y/o beneficiaria", true),
-  documento("acreditaPropiedad", "4. Documento con el que acredita la legal propiedad o posesión del terreno", true),
+  documento("acreditaPropiedad", "4. Documento con el que acredita la legal propiedad o posesión del terreno", salvoRefrendo),
   documento(
     "actaIncorporacion",
     "5. Acta de asamblea de incorporación a los Programas de PROBOSQUE, inscrita o presentada ante el RAN",
-    true,
+    salvoRefrendo,
     esNucleoAgrario
   ),
   documento(
     "actaRepresentantes",
     "6. Acta de asamblea de elección vigente de los órganos de representación (o credenciales vigentes del RAN)",
-    true,
+    salvoRefrendo,
     esNucleoAgrario
   ),
   documento(
     "actaConstitutiva",
     "7. Documento que acredite la legal constitución, protocolizado ante Notario Público, con facultades de administración",
-    true,
+    salvoRefrendo,
     esSociedad
   ),
   documento(
     "acreditacionRepresentante",
     "8. Documento vigente que acredite la representación legal, con facultades de administración y/o dominio",
-    true,
+    salvoRefrendo,
     tieneRepresentante
   ),
 ];
-
-const observacionesDocumentos = {
-  id: "observacionesDocumentos",
-  etiqueta: "Observaciones a los documentos presentados",
-  tipo: "textarea",
-  obligatorio: false,
-  seccion: SECCION_DOCUMENTOS,
-  ancho: "completo",
-};
 
 const declaratoria = {
   id: "declaracionNoLitigio",
@@ -315,11 +318,16 @@ const camposRefrendo = () => [
   opcionUnica("esRefrendo", "¿Es refrendo o mantenimiento de un apoyo de años anteriores?", ["Sí", "No"], true, {
     seccion: "Refrendo",
     ancho: "completo",
+    nota:
+      "En refrendo solo son obligatorios la CURP actualizada y el FO-PB-502, siempre que la documentación " +
+      "legal del predio ya esté en los archivos de PROBOSQUE y siga vigente. El polígono se vuelve a cargar " +
+      "porque puede cambiar de un año a otro.",
   }),
   texto("foliosRefrendo", "Folios de refrendo o mantenimiento (2021, 2022, 2023, 2024)", true, {
     seccion: "Refrendo",
     ancho: "completo",
-    visibleSi: (r) => r.esRefrendo === "Sí",
+    visibleSi: esRefrendo,
+    nota: "Escribe el folio del apoyo anterior tal como aparece en tu contrato, por ejemplo PS-2025-0042.",
   }),
 ];
 
@@ -331,7 +339,6 @@ const formulario501A = (camposPrograma, documentosPrograma = []) => [
   ...camposPrograma.map((campo) => ({ seccion: SECCION_PROGRAMA, ...campo })),
   ...documentos501A(),
   ...documentosPrograma,
-  observacionesDocumentos,
   declaratoria,
 ];
 
@@ -354,7 +361,6 @@ const camposServiciosAmbientales = formulario501A(
       subseccion: SUB_PSA,
       visibleSi: (r) => r.fondosConcurrentesPSA === "Sí",
     }),
-    { id: "observacionesPrograma", etiqueta: "Observaciones", tipo: "textarea", obligatorio: false, subseccion: SUB_PSA, ancho: "completo" },
   ],
   [
     // 11. Certificado del Manejo Forestal (PSAHEM): aplica si el predio está certificado
@@ -620,20 +626,16 @@ const camposManejoForestal = [
   documento("certificadoCustodia", "12. Copia del certificado de la Cadena de Custodia", true, pideFsc(FSC.mantCustodia)),
   documento("certificadoFscPredio", "13. Copia del certificado internacional FSC del predio", true, pideFsc(FSC.servicios)),
 
-  // Autorización del FO-PB-501B: segunda persona beneficiaria (si aplica)
-  opcionUnica("designaSegundaPersona", "¿Designa una segunda persona beneficiaria?", ["Sí", "No"], true, {
-    seccion: "Autorización",
-    ancho: "completo",
-  }),
+  // Autorización del FO-PB-501B: la segunda persona beneficiaria es obligatoria (RO MFS, requisitos)
   texto("segundaPersonaNombres", "Nombre completo de la segunda persona beneficiaria", true, {
     seccion: "Autorización",
-    visibleSi: designaSegunda,
+    subseccion: SUB_SEGUNDA,
+    nota: "En núcleos agrarios debe ser integrante del comisariado o su suplente.",
   }),
   texto("segundaPersonaDomicilio", "Domicilio de la segunda persona beneficiaria", true, {
     seccion: "Autorización",
-    visibleSi: designaSegunda,
+    subseccion: SUB_SEGUNDA,
   }),
-  observacionesDocumentos,
   declaratoria,
 ];
 

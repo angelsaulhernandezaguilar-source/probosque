@@ -2,7 +2,7 @@ import { Fragment, useState } from "react";
 import { CONCEPTOS } from "../datos/catalogos";
 import { campoObligatorio, campoVisible } from "../datos/camposFormulario";
 import ZonaArchivo from "../componentes/ZonaArchivo";
-import { calcularApoyo, pesos, validarClabe, validarSuperficie } from "../utilidades/reglas";
+import { calcularApoyo, fechaLarga, hoyISO, pesos, validarSuperficie } from "../utilidades/reglas";
 import "./RegistroConvocatoria.css";
 
 // ¿El campo tiene respuesta? Sirve para revisar los obligatorios
@@ -18,14 +18,32 @@ const vacio = (campo) =>
 
 const Obligatorio = ({ si }) => (si ? <span className="rc-obligatorio" aria-hidden="true"> *</span> : null);
 
+// Props nuevas:
+//   formato        → nombre del formato oficial para el encabezado ("FO-PB-501A Solicitud Única - ...")
+//   solicitante    → nombre de la cuenta que está registrando (encabezado)
+//   fijos          → { campo: valor } que no se pueden editar (el correo de la cuenta)
+//   validarPredio  → función(respuestas) que devuelve un mensaje si el predio ya está registrado
 export default function RegistroConvocatoria({
   nombrePrograma,
+  formato,
+  solicitante,
   campos,
   conConceptos = true,
+  fijos = {},
+  validarPredio,
   onRegresar,
   onFinalizar,
 }) {
-  const [respuestas, setRespuestas] = useState({});
+  // Los campos con "calcular" los llena el sistema a partir de las demás respuestas
+  const conCalculados = (actuales) => {
+    const siguientes = { ...actuales };
+    for (const campo of campos) {
+      if (campo.calcular) siguientes[campo.id] = campo.calcular(siguientes) ?? "";
+    }
+    return siguientes;
+  };
+
+  const [respuestas, setRespuestas] = useState(() => conCalculados({ ...fijos }));
   // Los archivos reales (File) van aparte: en respuestas solo queda el nombre para mostrarlo
   const [archivos, setArchivos] = useState({});
 
@@ -34,7 +52,7 @@ export default function RegistroConvocatoria({
   const camposVisibles = camposDelPrograma.filter((campo) => campoVisible(campo, respuestas));
 
   const actualizarRespuesta = (id, valor) => {
-    setRespuestas((actuales) => ({ ...actuales, [id]: valor }));
+    setRespuestas((actuales) => conCalculados({ ...actuales, [id]: valor }));
   };
 
   const actualizarArchivos = (campo, lista) => {
@@ -49,10 +67,8 @@ export default function RegistroConvocatoria({
     conConceptos && tieneCampoConcepto && tieneCampoSuperficie
       ? validarSuperficie(respuestas.concepto ?? "", respuestas.superficie ?? "")
       : "";
-  const errorClabe =
-    respuestas.clabe && !validarClabe(respuestas.clabe)
-      ? "La CLABE debe tener 18 dígitos y un dígito verificador válido."
-      : "";
+  // Un predio no se registra dos veces en la misma convocatoria
+  const errorPredio = validarPredio?.(respuestas) ?? "";
   const concepto = CONCEPTOS.find((item) => item.id === respuestas.concepto);
   const apoyo =
     conConceptos && concepto && !errorSuperficie
@@ -62,7 +78,7 @@ export default function RegistroConvocatoria({
   const faltantes = camposVisibles.filter(
     (campo) => campoObligatorio(campo, respuestas) && !tieneValor(campo, respuestas[campo.id])
   );
-  const completo = faltantes.length === 0 && !errorSuperficie && !errorClabe;
+  const completo = faltantes.length === 0 && !errorSuperficie && !errorPredio;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -196,18 +212,21 @@ export default function RegistroConvocatoria({
                 step={campo.tipo === "number" ? "any" : undefined}
                 maxLength={campo.maxLength}
                 pattern={campo.pattern}
-                inputMode={campo.id === "clabe" ? "numeric" : undefined}
                 value={valor}
+                // Calculados (delegación) y fijos (correo de la cuenta): se ven, pero no se editan
+                readOnly={Boolean(campo.calcular) || campo.id in fijos}
+                placeholder={campo.calcular ? "Elige primero el municipio" : undefined}
                 aria-invalid={
                   (campo.id === "superficie" && Boolean(errorSuperficie)) ||
-                  (campo.id === "clabe" && Boolean(errorClabe))
+                  (campo.id === "Nombre_predio" && Boolean(errorPredio))
                 }
                 onChange={(e) => actualizarRespuesta(campo.id, e.target.value)}
               />
             )}
             {campo.id === "superficie" && errorSuperficie && <small className="rc-error">{errorSuperficie}</small>}
             {campo.id === "concepto" && concepto && <small className="rc-ayuda">{concepto.nota}</small>}
-            {campo.id === "clabe" && errorClabe && <small className="rc-error">{errorClabe}</small>}
+            {campo.id === "Nombre_predio" && errorPredio && <small className="rc-error" role="alert">{errorPredio}</small>}
+            {campo.id in fijos && <small className="rc-ayuda">Es el correo de tu cuenta: ahí llegan las notificaciones.</small>}
           </>
         );
     }
@@ -215,11 +234,20 @@ export default function RegistroConvocatoria({
 
   return (
     <form className="rc-pagina" onSubmit={handleSubmit} noValidate>
-      <h1 className="rc-titulo">Registro a convocatoria</h1>
+      {/* Encabezado del formato oficial: nombre del formato, fecha de recepción y folio */}
+      <header className="rc-encabezado">
+        {formato && <p className="rc-formato">{formato}</p>}
+        <h1 className="rc-titulo">Registro a convocatoria</h1>
+        <dl className="rc-encabezado-datos">
+          {nombrePrograma && <div><dt>Programa</dt><dd>{nombrePrograma}</dd></div>}
+          <div><dt>Fecha de recepción</dt><dd>{fechaLarga(hoyISO())}</dd></div>
+          {solicitante && <div><dt>Registra</dt><dd>{solicitante}</dd></div>}
+          <div><dt>Folio</dt><dd>Se asigna al finalizar</dd></div>
+        </dl>
+      </header>
       <p className="rc-programa">
-        {nombrePrograma ? `Programa ${nombrePrograma}. ` : ""}
         Llena la Solicitud Única. Las preguntas que no aplican a tu caso no se muestran.
-        Al terminar recibes un folio para dar seguimiento.
+        Al terminar recibes tu folio y un acuse en PDF.
       </p>
 
       {/* La columna del apoyo estimado solo existe en Plantaciones; sin ella el formulario usa todo el ancho */}
@@ -239,6 +267,7 @@ export default function RegistroConvocatoria({
                 {nuevaSubseccion && <h3 className="rc-subgrupo">{campo.subseccion}</h3>}
                 <div className={`rc-campo rc-campo--${campo.ancho ?? "mitad"}`}>
                   {control(campo, id, valor, campoObligatorio(campo, respuestas))}
+                  {campo.nota && <small className="rc-ayuda">{campo.nota}</small>}
                 </div>
               </Fragment>
             );
@@ -266,6 +295,10 @@ export default function RegistroConvocatoria({
           </div>
         )}
       </div>
+
+      {errorPredio && faltantes.length === 0 && (
+        <p className="rc-pendientes" role="status">{errorPredio}</p>
+      )}
 
       {!completo && faltantes.length > 0 && (
         <p className="rc-pendientes" role="status">

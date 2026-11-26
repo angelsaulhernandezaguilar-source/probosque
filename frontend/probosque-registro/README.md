@@ -1,8 +1,7 @@
 # PROBOSQUE · Ingreso y seguimiento de convocatorias 2026
 
-Prototipo en React del sistema de ingreso a la convocatoria de PROBOSQUE
-(Protectora de Bosques del Estado de México), con foco en el programa
-**Plantaciones Sustentables 2026**.
+Frontend en React del portal de programas forestales de PROBOSQUE
+(Protectora de Bosques del Estado de México). Consume la API de Django de `backend/`.
 
 Proyecto de la materia Formulación de Proyectos Informáticos (ESCOM-IPN).
 
@@ -10,10 +9,11 @@ Proyecto de la materia Formulación de Proyectos Informáticos (ESCOM-IPN).
 
 Necesitas [Node.js](https://nodejs.org) 18 o más reciente.
 
+Primero levanta el backend desde la raíz del repositorio (`docker compose up -d`). Luego:
+
 ```powershell
-git clone https://github.com/angelsaulhernandezaguilar-source/probosque-registro.git
-cd probosque-registro
-npm install      # solo la primera vez
+cd frontend/probosque-registro
+npm install      # la primera vez y cada que cambie package.json (ahora usa leaflet y jspdf)
 npm run dev      # abre la dirección que aparece, normalmente http://localhost:5173
 ```
 
@@ -28,73 +28,93 @@ Para apagarlo, `Ctrl + C` en la terminal.
 
 ## Qué hace
 
-Cubre el inicio del flujo de la convocatoria, de la publicación al dictamen jurídico:
+Cubre el flujo de la convocatoria, de la publicación a los listados del Comité:
 
 1. La **Dirección General** publica la convocatoria con su periodo de registro.
-2. El **beneficiario** se registra, carga sus documentos y el polígono de su predio, y recibe un folio.
-3. La **delegación regional** coteja la documentación. Si la acepta, pasa a dictamen jurídico.
-   Si la rechaza, el beneficiario tiene 5 días hábiles para subsanar y puede reenviarla.
-4. La **Unidad jurídica** emite dictamen favorable o desfavorable (no factible).
-5. El beneficiario consulta en cualquier momento en qué paso va, con su folio.
+2. La **persona solicitante** crea su cuenta, llena la Solicitud Única, carga sus documentos y el
+   polígono de su predio, y recibe un folio con su **acuse en PDF**.
+3. La **delegación regional** coteja la documentación de los municipios que atiende. Si la acepta,
+   pasa a dictamen jurídico. Si la rechaza, el solicitante tiene 5 días hábiles para subsanar.
+4. La **Unidad Jurídica** emite dictamen favorable o desfavorable y lo descarga **en PDF**.
+5. La **Instancia Ejecutora / Comité** consolida el listado: captura el techo presupuestal y cada
+   solicitud aprobada le va restando su monto; las que ya no alcanzan quedan en lista de espera.
+6. El solicitante consulta en cualquier momento en qué paso va, en "Mis solicitudes".
 
-## Pantallas
+## Inicio de sesión y pantallas por rol
 
-| Ruta | Pantalla | Quién la usa |
-|------|----------|--------------|
-| `#/` | Convocatorias publicadas y días que quedan para registrarse | Público |
-| `#/registro/:id` | Registro a la convocatoria | Beneficiario |
-| `#/estatus` | Mi solicitud: ruta del trámite, datos e historial | Beneficiario |
+La barra superior muestra quién tiene la sesión iniciada y solo las secciones de su rol
+(`src/datos/usuarios.js`). Una ruta de otro rol responde "Sin acceso".
+
+| Ruta | Pantalla | Rol |
+|------|----------|-----|
+| `#/` | Convocatorias publicadas | Público |
+| `#/ingresar` | Inicio de sesión y alta de solicitantes | Público |
+| `#/registro/:id` | Registro a la convocatoria | Persona solicitante |
+| `#/estatus` | Mis solicitudes: ruta del trámite, polígono, datos e historial | Persona solicitante |
+| `#/acuse/:folio` | Acuse de recepción (pantalla y PDF) | Solicitante y Delegación |
 | `#/publicar` | Publicación de convocatorias | Dirección General |
-| `#/recepcion` | Recepción de solicitudes | Delegación regional |
-| `#/dictamenes` | Emisión de dictámenes jurídicos | Unidad jurídica |
+| `#/recepcion` | Recepción de expedientes de su delegación, con estado | Delegación Regional |
+| `#/dictamenes` | Emisión de dictámenes jurídicos | Unidad Jurídica |
+| `#/dictamen/:folio` | Dictamen jurídico (pantalla y PDF) | Unidad Jurídica y Comité |
+| `#/listados` | Consolidación y aprobación de listados | Instancia Ejecutora / Comité |
 
-No hay inicio de sesión: la barra superior deja entrar a la pantalla de cualquier instancia.
+Cuentas de demostración del personal (contraseña `probosque2026`, también salen en la pantalla de ingreso):
 
-## Necesidades que atiende
+| Correo | Rol |
+|--------|-----|
+| `direccion@probosque.test` | Dirección General |
+| `delegacion.toluca@probosque.test` (una por delegación: `delegacion.amecameca@...`, `delegacion.valle.de.bravo@...`) | Delegación Regional |
+| `juridico@probosque.test` | Unidad Jurídica |
+| `comite@probosque.test` | Instancia Ejecutora / Comité |
 
-Los números corresponden a la tabla de necesidades del proyecto.
+Las personas solicitantes crean su cuenta en `#/ingresar`. Ven las solicitudes registradas con el
+correo de su cuenta: para ver las de `datos_prueba`, crea una cuenta con `solicitante1@datos-prueba.mx`.
 
-| # | Necesidad | Dónde |
-|---|-----------|-------|
-| 5 | Captura de superficie y polígonos | Registro (el polígono se recibe como archivo) |
-| 9 | Cálculo de montos por concepto y superficie | Registro, Recepción y Mi solicitud |
-| 17 | Consulta de estatus por el usuario | Mi solicitud |
-| 23 | Validación de CLABE | Registro |
+> El backend todavía no tiene autenticación. La sesión se valida en el navegador
+> (`src/estado/Sesion.jsx`); cuando exista `/api/login/` solo cambia ese archivo.
 
-Reglas aplicadas (Reglas de Operación 2026):
+## Reglas aplicadas
 
-- **Plantación maderable / no maderable:** $10,000 por hectárea, de 1 a 150 ha.
-- **Mantenimiento de plantaciones:** $5,000 por hectárea, de 0.5 a 150 ha.
-- **Mantenimiento navideño:** sin recurso económico, desde 0.5 ha.
-- El apoyo se divide en dos ministraciones: 70% y 30%.
-- La CLABE debe tener 18 dígitos y dígito verificador válido.
-- Subsanar documentación: 5 días hábiles.
-
-Los conceptos de apoyo solo aparecen cuando la convocatoria es de Plantaciones Sustentables.
+- **Delegación según el municipio:** el municipio se elige de la lista de los 125 y la delegación se
+  asigna sola con la tabla de las Reglas de Operación (`src/datos/municipios.js`).
+- **Predio único:** no se puede registrar dos veces el mismo predio (nombre + municipio) en una convocatoria.
+- **Segunda persona beneficiaria:** siempre se designa; en núcleos agrarios es el secretario(a) o tesorero(a).
+- **Refrendo:** solo son obligatorios la CURP, el FO-PB-502 y el polígono.
+- **Sin CLABE ni observaciones** en la solicitud: los datos bancarios se capturan después de la aprobación.
+- **Polígono:** se dibuja sobre un mapa (Leaflet + OpenStreetMap) con el GeoJSON que regresa la API.
+- **Plantaciones:** $10,000/ha (plantación, 1 a 150 ha), $5,000/ha (mantenimiento, 0.5 a 150 ha),
+  navideño sin recurso económico. Dos ministraciones: 70% y 30%.
+- **Plazos:** subsanar 5 días hábiles; dictámenes 45 días hábiles (la fecha sale en el acuse).
+- **Listados:** orden cronológico; aprueba mientras alcance el techo presupuestal y el resto va a lista de espera.
 
 ## Estructura del código
 
 ```
 src/
-├── App.jsx                  Rutas, barra de navegación y conexión de cada vista con el estado
+├── App.jsx                  Rutas protegidas por rol, barra con el usuario y conexión de vistas y estado
 ├── App.css                  Sistema visual: colores, tipografías, botones, campos y paneles
-├── vistas/                  Las cuatro vistas de trabajo; solo dibujan y avisan por props
-│   ├── PublicacionConvocatorias.jsx / .css
-│   ├── RegistroConvocatoria.jsx / .css
-│   ├── RecepcionSolicitudes.jsx
-│   ├── EmisionDictamenes.jsx
+├── api/cliente.js           Único archivo que conoce la dirección del backend
+├── estado/
+│   ├── Almacen.jsx          Datos de la API de Django (convocatorias, solicitudes, dictámenes)
+│   ├── Sesion.jsx           Usuario con sesión iniciada
+│   └── listados.js          Listados del Comité (en el navegador hasta que exista la API)
+├── datos/
+│   ├── catalogos.js         Programas, delegaciones, conceptos de apoyo y estados
+│   ├── camposFormulario.js  Formularios FO-PB-501A / 501B por programa
+│   ├── municipios.js        Municipios que atiende cada delegación
+│   └── usuarios.js          Roles, secciones por rol y cuentas de demostración
+├── vistas/                  Vistas de trabajo; solo dibujan y avisan por props
+│   ├── PublicacionConvocatorias.jsx / RegistroConvocatoria.jsx
+│   ├── RecepcionSolicitudes.jsx / EmisionDictamenes.jsx
 │   └── PanelSolicitudes.css     Bandeja compartida por Recepción y Dictámenes
-├── paginas/
-│   ├── Convocatorias.jsx    Inicio
-│   └── Estatus.jsx          Consulta por folio
-├── estado/Almacen.jsx       Estado global, acciones y datos de demostración
-├── utilidades/reglas.js     CLABE, superficie, montos, días hábiles y fechas
-└── datos/catalogos.js       Programas, delegaciones, conceptos de apoyo y estados
+├── paginas/                 Convocatorias, Ingreso, Estatus (Mis solicitudes), Documento, Listados
+├── componentes/             ZonaArchivo, MapaPredio (polígono), DocumentoOficial (acuse y dictamen)
+└── utilidades/
+    ├── reglas.js            Superficie, montos, días hábiles, fechas y predio repetido
+    ├── listados.js          Asignación del techo presupuestal y folios de proyecto
+    ├── documentos.js        Contenido del acuse y del dictamen
+    └── pdf.js               Convierte un documento en PDF (jsPDF)
 ```
-
-Las vistas no conocen el estado global: reciben datos y funciones por props. Por eso
-`RegistroConvocatoria` entrega un `FormData` en `onFinalizar`, listo para mandarse a un
-servidor.
 
 ## Diseño
 
@@ -104,30 +124,11 @@ servidor.
 - **Bandejas en dos columnas:** lista a la izquierda y expediente a la derecha.
 - Se adapta a pantallas de celular.
 
-## Datos de demostración
-
-La app arranca con una convocatoria abierta y cuatro solicitudes de personas ficticias.
-Las fechas de esa convocatoria (1 de noviembre al 18 de diciembre de 2026) son inventadas
-para que el registro esté abierto; no son las fechas reales del programa.
-
-Todo se guarda en el `localStorage` del navegador. El enlace "Restablecer datos de
-demostración", al pie de la página, borra los cambios.
-
 ## Límites del prototipo
 
-- No hay backend ni usuarios: los datos viven en un solo navegador.
-- De los archivos solo se conserva el nombre. El polígono no se lee ni se valida.
+- La sesión, las cuentas de solicitantes y los listados del Comité viven en el navegador: faltan en el
+  backend la autenticación y los modelos de presupuesto y listados (y que el predio único y la
+  delegación por municipio se validen también en Django).
 - Los días hábiles saltan sábados y domingos, pero no días festivos.
-- Quedan fuera el Listado de Incumplidos, el dictamen técnico (SIG), la priorización,
-  el Comité, el vivero, el contrato de adhesión, los pagos y la verificación en campo.
-
-## Solo el módulo de registro
-
-La rama [`solo-registro`](https://github.com/angelsaulhernandezaguilar-source/probosque-registro/tree/solo-registro)
-conserva la versión que tiene únicamente la pantalla de registro, para trabajarla por separado:
-
-```powershell
-git switch solo-registro
-npm install
-npm run dev
-```
+- Quedan fuera el dictamen técnico (SIG), la publicación de resultados, el contrato de adhesión,
+  los pagos y la verificación en campo.

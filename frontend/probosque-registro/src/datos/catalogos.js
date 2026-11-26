@@ -72,6 +72,25 @@ export const ETIQUETA_ESTADO = {
   NO_FACTIBLE: "Dictamen jurídico desfavorable: no factible",
 };
 
+// Texto corto para las píldoras de las bandejas (Recepción, Dictámenes, Mis solicitudes)
+export const ESTADO_CORTO = {
+  RECIBIDA: "Por cotejar",
+  SUBSANACION: "En subsanación",
+  EN_DICTAMEN: "En dictamen jurídico",
+  JURIDICO_FAVORABLE: "Jurídico favorable",
+  NO_FACTIBLE: "No factible",
+};
+
+// Clase de color de la píldora según el estado ("" = verde normal)
+export const TONO_ESTADO = {
+  RECIBIDA: "app-etiqueta--proxima",
+  SUBSANACION: "app-etiqueta--alerta",
+  NO_FACTIBLE: "app-etiqueta--negativa",
+};
+
+export const siglasPrograma = (id) =>
+  PROGRAMAS.find((p) => p.id === normalizarProgramaId(id))?.siglas ?? "";
+
 export const normalizarProgramaId = (id) =>
   id === "Procarbono" ? "capturando-carbono" : id;
 

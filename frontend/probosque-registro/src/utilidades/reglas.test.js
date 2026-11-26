@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   calcularApoyo,
   estadoConvocatoria,
+  solicitudDelMismoPredio,
   sumarDiasHabiles,
   validarClabe,
   validarSuperficie,
@@ -55,5 +56,27 @@ describe("estadoConvocatoria", () => {
     expect(estadoConvocatoria(c, "2026-10-31")).toBe("proxima");
     expect(estadoConvocatoria(c, "2026-12-18")).toBe("abierta");
     expect(estadoConvocatoria(c, "2026-12-19")).toBe("cerrada");
+  });
+});
+
+describe("solicitudDelMismoPredio", () => {
+  const solicitudes = [
+    { id: 1, convocatoriaId: 7, estado: "EN_DICTAMEN", Nombre_predio: "Las Trancas", Municipio_predio: "Amecameca" },
+    { id: 2, convocatoriaId: 7, estado: "NO_FACTIBLE", Nombre_predio: "El Encinal", Municipio_predio: "Toluca" },
+  ];
+
+  it("detecta el mismo predio aunque cambien acentos, mayúsculas o espacios", () => {
+    expect(solicitudDelMismoPredio(solicitudes, 7, "  las  TRÁNCAS ", "amecameca")?.id).toBe(1);
+  });
+
+  it("permite otro municipio, otra convocatoria o un predio cuya solicitud fue no factible", () => {
+    expect(solicitudDelMismoPredio(solicitudes, 7, "Las Trancas", "Ozumba")).toBeNull();
+    expect(solicitudDelMismoPredio(solicitudes, 8, "Las Trancas", "Amecameca")).toBeNull();
+    expect(solicitudDelMismoPredio(solicitudes, 7, "El Encinal", "Toluca")).toBeNull();
+  });
+
+  it("no marca nada mientras falte el nombre o el municipio", () => {
+    expect(solicitudDelMismoPredio(solicitudes, 7, "", "Amecameca")).toBeNull();
+    expect(solicitudDelMismoPredio(solicitudes, 7, "Las Trancas", "")).toBeNull();
   });
 });
