@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { mostrarEnCelular } from "../utilidades/pantalla";
 import "./PanelSolicitudes.css";
 
 // HU-2.1-01 · Recepción y validación de expedientes (Delegación Regional)
@@ -13,10 +14,13 @@ export default function RecepcionSolicitudes({ solicitudes = [], aprobadas = [],
   const seleccionada = [...solicitudes, ...aprobadas].find((s) => s.id === seleccionadaId);
   const seleccionadaPendiente = solicitudes.some((s) => s.id === seleccionadaId);
 
+  const detalleRef = useRef(null); // para bajar al detalle en el celular
+
   const elegir = (id) => {
     setSeleccionadaId(id);
     setDocumentoPrevisualizadoId(null);
     setFaltantes("");
+    mostrarEnCelular(detalleRef); // en pantallas angostas el detalle queda abajo de la lista
   };
 
   return (
@@ -81,7 +85,7 @@ export default function RecepcionSolicitudes({ solicitudes = [], aprobadas = [],
       </div>
 
       {/* Detalle de la solicitud elegida */}
-      <section className="ps-detalle">
+      <section className="ps-detalle" ref={detalleRef}>
         <div className="ps-detalle-cuerpo">
           {seleccionada ? (
             <>

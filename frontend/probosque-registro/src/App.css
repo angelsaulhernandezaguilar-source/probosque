@@ -659,7 +659,16 @@ h3 {
 
 @media (max-width: 720px) {
   .app-barra-interior { padding: 10px 16px; }
-  .app-nav a { padding: 6px 10px; }
+  /* Menú en una sola fila que se desliza con el dedo (antes ocupaba 3 renglones) */
+  .app-nav {
+    flex-wrap: nowrap;
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .app-nav::-webkit-scrollbar { display: none; }
+  .app-nav a { flex: none; padding: 6px 10px; }
   .app-pagina { padding: 28px 16px 0; }
   .inicio-banda-interior { padding: 40px 16px 44px; }
   .inicio-curvas { opacity: 0.5; right: -220px; }

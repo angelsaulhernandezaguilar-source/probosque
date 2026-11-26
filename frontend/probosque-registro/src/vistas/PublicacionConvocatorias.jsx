@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
+import ZonaArchivo from "../componentes/ZonaArchivo";
 import { formularioDePrograma, PROGRAMAS_CON_FORMULARIO } from "../datos/camposFormulario";
 import "./PublicacionConvocatorias.css";
 
@@ -8,33 +9,7 @@ export default function PublicacionConvocatorias({ onVolver, onPublicar }) {
   const [fechaClausura, setFechaClausura] = useState("");
   const [reglas, setReglas] = useState(null);
   const [archivoConvocatoria, setArchivoConvocatoria] = useState(null);
-  const [arrastrando, setArrastrando] = useState(false);
-  const inputArchivoRef = useRef(null);
-  const inputConvocatoriaRef = useRef(null);
   const formulario = formularioDePrograma(programa);
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setArrastrando(false);
-    const archivo = e.dataTransfer.files[0];
-    if (archivo) setReglas(archivo);
-  };
-
-  const handleArchivo = (e) => {
-    const archivo = e.target.files[0];
-    if (archivo) setReglas(archivo);
-  };
-
-  const handleDropConvocatoria = (e) => {
-    e.preventDefault();
-    const archivo = e.dataTransfer.files[0];
-    if (archivo) setArchivoConvocatoria(archivo);
-  };
-
-  const handleArchivoConvocatoria = (e) => {
-    const archivo = e.target.files[0];
-    if (archivo) setArchivoConvocatoria(archivo);
-  };
 
   const fechasInvalidas =
     fechaApertura && fechaClausura && fechaClausura < fechaApertura;
@@ -87,7 +62,8 @@ export default function PublicacionConvocatorias({ onVolver, onPublicar }) {
               <ul>
                 {formulario.campos.map((campo) => (
                   <li key={campo.id}>
-                    {campo.etiqueta}{campo.obligatorio ? " (obligatorio)" : ""}
+                    {campo.subseccion ? `${campo.subseccion}: ` : ""}{campo.etiqueta}
+                    {campo.visibleSi || typeof campo.obligatorio === "function" ? " (si aplica)" : campo.obligatorio ? " (obligatorio)" : ""}
                   </li>
                 ))}
               </ul>
@@ -128,58 +104,27 @@ export default function PublicacionConvocatorias({ onVolver, onPublicar }) {
           </p>
         )}
 
-        <div
-          className={`pc-dropzone ${arrastrando ? "pc-dropzone--activa" : ""} ${reglas ? "pc-dropzone--llena" : ""}`}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setArrastrando(true);
-          }}
-          onDragLeave={() => setArrastrando(false)}
-          onDrop={handleDrop}
-          onClick={() => inputArchivoRef.current.click()}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") inputArchivoRef.current.click();
-          }}
-        >
-          {reglas ? reglas.name : "Arrastra aquí las reglas de operación, o haz clic para elegir el archivo"}
-          <input
-            ref={inputArchivoRef}
-            type="file"
+        <div className="pc-campo">
+          <label htmlFor="reglas">Reglas de operación</label>
+          <ZonaArchivo
+            id="reglas"
+            archivos={reglas ? [reglas] : []}
             accept=".pdf,.doc,.docx"
-            onChange={handleArchivo}
-            onClick={(e) => e.stopPropagation()}
-            hidden
+            texto="Arrastra aquí las reglas de operación, o haz clic para elegir el archivo"
+            onCambiar={(lista) => setReglas(lista[0] ?? null)}
           />
         </div>
       </section>
 
       <section className="pc-caja">
         <h2 className="pc-subtitulo">Subir archivo de convocatoria</h2>
-        <div
-          className={`pc-dropzone ${archivoConvocatoria ? "pc-dropzone--llena" : ""}`}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={handleDropConvocatoria}
-          onClick={() => inputConvocatoriaRef.current.click()}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") inputConvocatoriaRef.current.click();
-          }}
-        >
-          {archivoConvocatoria
-            ? archivoConvocatoria.name
-            : "Arrastra aquí el archivo de convocatoria o haz clic para elegirlo"}
-          <input
-            ref={inputConvocatoriaRef}
-            type="file"
-            accept=".pdf,.doc,.docx"
-            onChange={handleArchivoConvocatoria}
-            onClick={(e) => e.stopPropagation()}
-            hidden
-          />
-        </div>
+        <ZonaArchivo
+          id="archivoConvocatoria"
+          archivos={archivoConvocatoria ? [archivoConvocatoria] : []}
+          accept=".pdf,.doc,.docx"
+          texto="Arrastra aquí el archivo de convocatoria o haz clic para elegirlo"
+          onCambiar={(lista) => setArchivoConvocatoria(lista[0] ?? null)}
+        />
       </section>
 
       <div className="pc-acciones">

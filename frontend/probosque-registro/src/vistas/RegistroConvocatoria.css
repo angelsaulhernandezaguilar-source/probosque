@@ -30,9 +30,10 @@
   gap: 16px;
 }
 
+/* Rejilla de 6 columnas: un campo ocupa la mitad (3), un tercio (2) o todo el ancho (6) */
 .rc-columna--datos {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 18px;
   padding: 28px 32px 32px;
   background: var(--superficie);
@@ -57,8 +58,120 @@
   border-top: 1px solid var(--linea);
 }
 
-.rc-campo--ancho {
+/* Sin la columna del apoyo estimado, el formulario ocupa todo el ancho (con un límite para leerlo cómodo) */
+.rc-contenido--solo {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 980px;
+}
+
+.rc-campo--mitad { grid-column: span 3; }
+.rc-campo--tercio { grid-column: span 2; }
+.rc-campo--completo { grid-column: 1 / -1; }
+
+.rc-campo textarea {
+  width: 100%;
+  min-height: 90px;
+  padding: 10px 12px;
+  border: 1.5px solid #9fb0a3;
+  border-radius: var(--radio-control);
+  background: var(--superficie);
+  resize: vertical;
+}
+
+.rc-obligatorio {
+  color: var(--rojo);
+}
+
+/* Subtítulos dentro de una sección: "Secretario(a)", "1. Plantación Forestal Comercial..." */
+.rc-subgrupo {
   grid-column: 1 / -1;
+  margin: 6px 0 -6px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--pino);
+}
+
+/* Opciones en línea (radio) y casillas, como los "( )" del formato impreso */
+.rc-opciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.rc-opciones legend {
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.rc-opciones--lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  padding: 14px;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-control);
+}
+
+.rc-opciones--lista legend {
+  width: auto;
+  margin-bottom: 0;
+  padding: 0 6px;
+}
+
+.rc-opcion {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+/* El estilo general de .rc-campo input (ancho 100%, borde) no aplica a radios ni casillas */
+.rc-campo .rc-opcion input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-top: 3px;
+  padding: 0;
+  accent-color: var(--pino);
+}
+
+.rc-declaratoria {
+  padding: 16px 18px;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-control);
+  background: #f6f8f5;
+}
+
+.rc-declaratoria p {
+  margin: 0 0 12px;
+  color: var(--tinta-suave);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.rc-declaratoria .rc-opcion {
+  font-weight: 700;
+}
+
+.rc-apoyo-vacio {
+  margin: 0;
+  padding: 20px 22px;
+  border: 1.5px dashed #9fb0a3;
+  border-radius: var(--radio-panel);
+  color: var(--tinta-suave);
+}
+
+.rc-pendientes {
+  margin: 20px 0 0;
+  color: var(--tinta-suave);
+  font-size: 0.9rem;
 }
 
 .rc-ayuda {
@@ -94,40 +207,6 @@
 .rc-checkbox-grupo input {
   width: auto;
   margin-top: 4px;
-}
-
-/* Zonas de arrastrar y soltar */
-.rc-dropzone {
-  min-height: 130px;
-  padding: 18px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  text-align: center;
-  border: 1.5px dashed #9fb0a3;
-  border-radius: var(--radio-panel);
-  background: var(--superficie);
-  color: var(--tinta-suave);
-  cursor: pointer;
-}
-
-.rc-dropzone--activa,
-.rc-dropzone:hover {
-  border-color: var(--pino);
-  background: var(--musgo);
-}
-
-.rc-dropzone--llena {
-  border-style: solid;
-  border-color: var(--pino);
-}
-
-.rc-archivo {
-  color: var(--tinta);
-  font-size: 0.92rem;
-  word-break: break-all;
 }
 
 /* Apoyo estimado */
@@ -197,6 +276,10 @@
 }
 
 @media (max-width: 560px) {
-  .rc-columna--datos { grid-template-columns: 1fr; padding: 20px; }
+  /* En el celular todos los campos van a lo ancho, uno debajo del otro */
+  .rc-columna--datos { grid-template-columns: minmax(0, 1fr); padding: 20px; }
+  .rc-campo--mitad,
+  .rc-campo--tercio { grid-column: 1 / -1; }
+  .rc-opciones--lista { grid-template-columns: minmax(0, 1fr); }
   .rc-acciones { flex-direction: column-reverse; }
 }

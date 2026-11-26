@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  campoObligatorio,
+  campoVisible,
   camposDeConvocatoria,
   formularioDePrograma,
   formatearRespuesta,
@@ -76,29 +78,78 @@ describe("camposDeConvocatoria", () => {
     expect(campos.find((campo) => campo.id === "registroForestalAnio").tipo).toBe("number");
   });
 
-  it("labels the applicant's paternal and maternal surnames separately", () => {
+  it("uses the surname labels of the FO-PB-501 formats", () => {
     const campos = formularioDePrograma("manejo-forestal").campos;
 
-    expect(campos.find((campo) => campo.id === "apellidos").etiqueta).toBe("Apellido paterno");
-    expect(campos.find((campo) => campo.id === "segundoApellido").etiqueta).toBe("Apellido materno");
+    expect(campos.find((campo) => campo.id === "apellidos").etiqueta).toBe("Primer apellido");
+    expect(campos.find((campo) => campo.id === "segundoApellido").etiqueta).toBe("Segundo apellido");
   });
 
-  it("uses a single-select group field and individual document uploads", () => {
+  it("lets the applicant choose several priority groups and uploads documents one by one", () => {
     const campos = formularioDePrograma("plantaciones").campos;
     const grupoPrioritario = campos.find((campo) => campo.id === "gruposPrioritarios");
-    const documentos = campos.filter((campo) => campo.seccion === "Documentos por presentar");
+    const documentos = campos.filter((campo) => campo.seccion === "IV. Documentación presentada");
 
-    expect(grupoPrioritario.tipo).toBe("select");
+    expect(grupoPrioritario.tipo).toBe("checkbox-group");
+    expect(grupoPrioritario.exclusiva).toBe("Ninguno");
     expect(grupoPrioritario.opciones.map(({ valor }) => valor)).toContain("Ninguno");
-    expect(documentos.some((campo) => campo.id === "documentosPresentados")).toBe(false);
     expect(documentos.find((campo) => campo.id === "identificacionOficial")).toMatchObject({
       tipo: "file",
       obligatorio: true,
     });
-    expect(documentos.find((campo) => campo.id === "actaIncorporacion")).toMatchObject({
-      tipo: "file",
-      obligatorio: false,
-    });
+  });
+});
+
+// "Si aplica": los campos aparecen y se exigen según lo que ya contestó la persona
+describe("campos que solo aplican en algunos casos", () => {
+  const campo = (programa, id) => formularioDePrograma(programa).campos.find((c) => c.id === id);
+
+  it("asks for the ejido documents and officers only for a Núcleo Agrario", () => {
+    const acta = campo("restauracion", "actaIncorporacion");
+    const secretario = campo("restauracion", "secretarioNombres");
+
+    expect(campoVisible(acta, { tipoPersona: "Propietario" })).toBe(false);
+    expect(campoVisible(secretario, { tipoPersona: "Propietario" })).toBe(false);
+    expect(campoVisible(acta, { tipoPersona: "Núcleo Agrario" })).toBe(true);
+    expect(campoObligatorio(acta, { tipoPersona: "Núcleo Agrario" })).toBe(true);
+    // Si no se muestra, tampoco es obligatorio
+    expect(campoObligatorio(acta, { tipoPersona: "Propietario" })).toBe(false);
+  });
+
+  it("shows program documents only when their condition applies", () => {
+    const proyecto = campo("restauracion", "proyectoTecnicoRestauracion");
+    expect(campoVisible(proyecto, { restauracionIntegral: "" })).toBe(false);
+    expect(campoVisible(proyecto, { restauracionIntegral: "12" })).toBe(true);
+
+    const certificado = campo("servicios-ambientales", "certificadoManejo");
+    expect(campoVisible(certificado, { pmfVigente: "No" })).toBe(false);
+    expect(campoVisible(certificado, { pmfVigente: "Certificado" })).toBe(true);
+
+    const anioConvenio = campo("servicios-ambientales", "anioConvenioPSA");
+    expect(campoVisible(anioConvenio, { fondosConcurrentesPSA: "Sí" })).toBe(true);
+    expect(campoVisible(anioConvenio, { fondosConcurrentesPSA: "No" })).toBe(false);
+  });
+
+  it("follows the MFS options: resources, forest services provider and FSC documents", () => {
+    const recursosUma = campo("manejo-forestal", "recursosUma");
+    const prestador = campo("manejo-forestal", "prestadorNombre");
+    const custodia = campo("manejo-forestal", "autorizacionAlmacenamiento");
+    const estudios = campo("manejo-forestal", "estudiosTecnicos");
+
+    expect(campoVisible(recursosUma, { estudiosTecnicos: ["Maderable"] })).toBe(false);
+    expect(
+      campoVisible(recursosUma, {
+        estudiosTecnicos: ["Unidades para la Conservación de la Vida Silvestre maderables (UMA)"],
+      })
+    ).toBe(true);
+    expect(campoVisible(prestador, { estudiosTecnicos: [] })).toBe(false);
+    expect(campoVisible(prestador, { estudiosTecnicos: ["Maderable"] })).toBe(true);
+    expect(
+      campoVisible(custodia, { certificacionesFsc: ["Certificación para la Cadena de Custodia FSC"] })
+    ).toBe(true);
+    // Debe elegir al menos un estudio técnico o una certificación
+    expect(campoObligatorio(estudios, {})).toBe(true);
+    expect(campoObligatorio(estudios, { certificacionesFsc: ["Declaración de servicios ecosistémicos"] })).toBe(false);
   });
 });
 
